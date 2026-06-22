@@ -195,6 +195,7 @@ def dashboard(
         exclude_no_coordinates=exclude_no_coordinates,
         exclude_bad_neighborhoods=exclude_bad_neighborhoods,
         only_exact_location=only_exact_location,
+        only_developments=False,  # new developments live on their own /developments tab
     )
 
     total = count_properties(session, **filter_kwargs)
@@ -392,6 +393,79 @@ def new_view(
             "total_pages": total_pages,
             "per_page": per_page,
             "days": days_i,
+        },
+    )
+
+
+def _developments_stats(rows):
+    """Aggregate analysis for the new-developments tab."""
+    def avg(vals):
+        vals = [v for v in vals if v is not None]
+        return sum(vals) / len(vals) if vals else None
+
+    by_muni: dict = {}
+    for r in rows:
+        d = by_muni.setdefault(r.get("municipality") or "—", {"count": 0, "ppm2": []})
+        d["count"] += 1
+        if r.get("price_per_m2"):
+            d["ppm2"].append(r["price_per_m2"])
+    municipalities = sorted(
+        (
+            {
+                "name": m,
+                "count": d["count"],
+                "avg_ppm2": (sum(d["ppm2"]) / len(d["ppm2"]) if d["ppm2"] else None),
+            }
+            for m, d in by_muni.items()
+        ),
+        key=lambda x: x["count"],
+        reverse=True,
+    )
+    return {
+        "count": len(rows),
+        "avg_price": avg([r.get("price") for r in rows]),
+        "avg_ppm2": avg([r.get("price_per_m2") for r in rows]),
+        "avg_score": avg([r.get("total_score") for r in rows]),
+        "avg_metro": avg([r.get("distance_to_metro_m") for r in rows]),
+        "municipalities": municipalities,
+    }
+
+
+@app.get("/developments", response_class=HTMLResponse)
+def developments_view(
+    request: Request,
+    session: Session = Depends(get_session),
+    sort: str = Query("score_desc"),
+    limit: Optional[str] = Query(None),
+    page: Optional[str] = Query(None),
+):
+    sort_key = sort if sort in VALID_SORTS else "score_desc"
+    per_page = min(200, max(10, _opt_int(limit, 50)))
+    total = count_properties(session, only_developments=True)
+    total_pages = max(1, ceil(total / per_page))
+    page_num = min(max(1, _opt_int(page, 1)), total_pages)
+    offset = (page_num - 1) * per_page
+    results = query_properties(
+        session, only_developments=True, sort=sort_key, limit=per_page, offset=offset
+    )
+    rows = [serialize(p, s) for p, s in results]
+    # Analysis is computed over the whole set, not just the current page.
+    all_rows = [
+        serialize(p, s)
+        for p, s in query_properties(session, only_developments=True, limit=2000)
+    ]
+    return templates.TemplateResponse(
+        request,
+        "developments.html",
+        {
+            "rows": rows,
+            "stats": _developments_stats(all_rows),
+            "app_name": settings.app_name,
+            "total": total,
+            "page": page_num,
+            "total_pages": total_pages,
+            "per_page": per_page,
+            "sort": sort_key,
         },
     )
 

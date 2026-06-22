@@ -67,11 +67,16 @@ def _apply_filters(
     watched_only: bool = False,
     watch_status: Optional[str] = None,
     active_only: bool = True,
+    only_developments: Optional[bool] = None,
 ):
     if only_delisted:
         stmt = stmt.where(Property.is_active == False)  # noqa: E712
     elif active_only:
         stmt = stmt.where(Property.is_active == True)  # noqa: E712
+    if only_developments is not None:
+        # New developments have Idealista "/empreendimento/" URLs (project pages).
+        cond = func.coalesce(Property.url, "").like("%/empreendimento/%")
+        stmt = stmt.where(cond if only_developments else not_(cond))
     if max_price is not None:
         stmt = stmt.where(Property.price <= max_price)
     if typology:
