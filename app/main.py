@@ -243,6 +243,7 @@ def mini_app_me(
     session: Session = Depends(get_session),
     user: dict = Depends(require_telegram_user),
 ):
+    subscriptions.start_trial_if_new(session, int(user["id"]), user)
     st = subscriptions.status(session, int(user["id"]))
     st["price_stars"] = settings.subscription_price_stars
     st["period_days"] = settings.subscription_period_days

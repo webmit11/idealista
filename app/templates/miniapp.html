@@ -78,6 +78,7 @@
     <span class="meta" id="meta">Загрузка…</span>
     <button class="ghost" id="filterBtn">⚙ Фильтры</button>
   </div>
+  <div id="trialBanner"></div>
   <div id="chips"></div>
   <div id="stats"></div>
   <div id="list"></div>
@@ -383,6 +384,11 @@
     document.querySelectorAll('.tab').forEach(b => {
       if (b.dataset.id === 'watch' && !ME.owner) b.style.display = 'none';
     });
+    $('trialBanner').innerHTML = ME.trial
+      ? `<div style="margin:0 10px 6px; background:#16243a; color:#9cc2ff; border-radius:9px; padding:8px 11px; font-size:13px; display:flex; justify-content:space-between; align-items:center; gap:8px;">
+           🎁 Пробный доступ${ME.until ? ' до ' + new Date(ME.until).toLocaleString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''}
+           <button class="ghost" style="background:var(--btn); color:var(--btn-text);" onclick="subscribe()">Подписаться</button></div>`
+      : '';
     try {
       META = await api('/app/api/meta');
       wmap = {}; META.watch_statuses.forEach(s => wmap[s.value] = s);

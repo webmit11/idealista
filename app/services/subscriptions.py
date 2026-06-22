@@ -25,14 +25,34 @@ def is_active(session: Session, telegram_id: int) -> bool:
 
 def status(session: Session, telegram_id: int) -> dict:
     if is_owner(telegram_id):
-        return {"active": True, "owner": True, "until": None}
+        return {"active": True, "owner": True, "trial": False, "until": None}
     sub = session.get(Subscriber, int(telegram_id))
     active = bool(sub and sub.subscription_until and sub.subscription_until > datetime.utcnow())
     return {
         "active": active,
         "owner": False,
+        # a trial is active access that was never paid for (no charge on record)
+        "trial": bool(active and sub and not sub.last_charge_id),
         "until": sub.subscription_until.isoformat() if (sub and sub.subscription_until) else None,
     }
+
+
+def start_trial_if_new(session: Session, telegram_id: int, user: Optional[dict] = None) -> bool:
+    """Grant a one-off free trial the first time we ever see a (non-owner) user."""
+    if is_owner(telegram_id) or settings.trial_days <= 0:
+        return False
+    if session.get(Subscriber, int(telegram_id)) is not None:
+        return False  # already known (trial used or subscribed before) — no new trial
+    sub = Subscriber(
+        telegram_id=int(telegram_id),
+        subscription_until=datetime.utcnow() + timedelta(days=settings.trial_days),
+    )
+    if user:
+        sub.username = user.get("username")
+        sub.first_name = user.get("first_name")
+    session.add(sub)
+    session.commit()
+    return True
 
 
 def activate(
