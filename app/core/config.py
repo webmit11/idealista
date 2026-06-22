@@ -1,0 +1,122 @@
+"""Application configuration loaded from environment / .env file."""
+from functools import lru_cache
+from typing import Optional
+
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class Settings(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+        case_sensitive=False,
+    )
+
+    # --- App ---
+    app_name: str = "Porto Investment Finder"
+    app_host: str = "0.0.0.0"
+    app_port: int = 8000
+    debug: bool = False
+    log_level: str = "INFO"
+    log_json: bool = True
+
+    # --- Auth (HTTP Basic) ---
+    # Set dashboard_password to require login for everything except /health.
+    # Empty password = auth disabled (open).
+    dashboard_user: str = "admin"
+    dashboard_password: str = ""
+
+    # --- Database ---
+    # For Docker Compose this points at the `db` service. For local runs you can
+    # use e.g. sqlite:///./dev.db
+    database_url: str = "postgresql+psycopg2://idealista:idealista@db:5432/idealista"
+
+    # --- Apify (Idealista scraper) ---
+    apify_token: Optional[str] = None
+    # Apify actor id in URL form, e.g. "username~actor-name".
+    apify_actor_id: str = "igolaizola~idealista-scraper"
+    # Comma-separated Idealista search URLs used when none are passed explicitly.
+    apify_search_urls: str = ""
+    apify_max_items: int = 200
+    apify_country: str = "pt"
+    apify_timeout_s: int = 300
+    # Drop new-development project listings (/empreendimento/) — not single resale units.
+    apify_exclude_new_developments: bool = True
+    # Drop houses (chalet / countryHouse / moradia) — keep only apartments.
+    apify_exclude_houses: bool = True
+
+    # --- Geo / metro ---
+    # Walking speed used to turn metres into an estimated walking time.
+    walking_speed_m_per_min: float = 80.0
+
+    # --- Scoring / benchmark ---
+    benchmark_min_samples: int = 3
+    new_listing_days: int = 7
+    # Default minimum score on the dashboard (empty "Min score" field -> this).
+    # Set 0 in the field to see everything.
+    dashboard_min_score: float = 50.0
+    # Metro proximity score is multiplied by this when the listing's location is
+    # only approximate (advertiser hid the exact address) — the distance is less
+    # reliable. 1.0 disables the adjustment.
+    approx_location_metro_factor: float = 0.7
+    # Bonus points added to the total score when the listing mentions south-facing
+    # windows / orientation (more sun — valued in Portugal). 0 disables.
+    south_facing_bonus: float = 4.0
+    # Extra bad-neighborhood keywords (comma/newline separated), added to the
+    # built-in list in app/services/bad_neighborhoods.py.
+    bad_neighborhoods: str = ""
+
+    # --- Alerts ---
+    alerts_enabled: bool = False
+    alert_channel: str = "auto"  # auto | telegram | email | none
+    alert_min_score: float = 75.0
+    alert_min_price_drop: float = 5.0  # percent
+    app_base_url: str = "http://idealista.localhost"  # for links in alerts
+    # Telegram
+    telegram_bot_token: Optional[str] = None
+    telegram_chat_id: Optional[str] = None
+    # Telegram Mini App: only this user id may use the app (exclusive use).
+    telegram_owner_id: Optional[int] = None
+    # Email / SMTP
+    smtp_host: Optional[str] = None
+    smtp_port: int = 587
+    smtp_user: Optional[str] = None
+    smtp_password: Optional[str] = None
+    smtp_from: Optional[str] = None
+    smtp_tls: bool = True
+    alert_email_to: Optional[str] = None
+
+    # --- Investment calculator (Portugal) ---
+    stamp_duty_rate: float = 0.008          # Imposto do Selo on purchase
+    notary_registration_eur: float = 1500.0  # notary + land registry estimate
+    imi_rate: float = 0.003                  # annual IMI proxy (% of price)
+    operating_cost_pct: float = 0.20         # of rent: vacancy/maintenance/mgmt/condo/insurance
+    mortgage_ltv: float = 0.70               # loan-to-value
+    mortgage_rate: float = 0.035             # annual interest rate
+    mortgage_term_years: int = 30
+
+    # --- Manual refresh button ---
+    manual_refresh_min_interval_hours: float = 24.0  # no more than once per day
+    manual_refresh_max_items: int = 200  # results per area for the manual refresh
+
+    # --- Scheduler ---
+    scheduler_enabled: bool = False
+    scheduler_provider: str = "mock"  # "mock" | "apify"
+    daily_import_hour: int = 6
+    daily_import_minute: int = 0
+
+    # --- Paths ---
+    mock_data_path: str = "sample_data/properties_mock.json"
+    raw_data_dir: str = "data/raw"
+
+    # Auto-create tables on startup (MVP convenience). Use Alembic in production.
+    auto_create_tables: bool = True
+
+
+@lru_cache
+def get_settings() -> Settings:
+    return Settings()
+
+
+settings = get_settings()

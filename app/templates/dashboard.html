@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+{% block content %}
+
+{% macro score_color(s) -%}
+{% if s is none %}#444{% elif s >= 70 %}#2fbf71{% elif s >= 55 %}#9acd32{% elif s >= 40 %}#f5a623{% else %}#e5534b{% endif %}
+{%- endmacro %}
+
+{% macro yn(v) -%}
+{% if v %}<span class="yes">Yes</span>{% else %}<span class="no">–</span>{% endif %}
+{%- endmacro %}
+
+{% macro sorth(label, asc_key, desc_key, default='desc', cls='') -%}
+{%- if filters.sort == desc_key %}{% set nxt = asc_key %}{% set arrow = ' ▾' %}
+{%- elif filters.sort == asc_key %}{% set nxt = desc_key %}{% set arrow = ' ▴' %}
+{%- else %}{% set nxt = desc_key if default == 'desc' else asc_key %}{% set arrow = '' %}{% endif -%}
+<th class="{{ cls }}"><a class="sorth" href="?{{ qs }}&page=1&sort={{ nxt }}">{{ label }}{{ arrow }}</a></th>
+{%- endmacro %}
+
+{% macro pager() %}
+{% if total_pages > 1 %}
+<div class="pager">
+  {% if page > 1 %}
+    <a class="btn secondary" href="?{{ qs }}&sort={{ filters.sort }}&page=1">« First</a>
+    <a class="btn secondary" href="?{{ qs }}&sort={{ filters.sort }}&page={{ page - 1 }}">‹ Prev</a>
+  {% endif %}
+  {% set start = [1, page - 2]|max %}
+  {% set end = [total_pages, page + 2]|min %}
+  {% for n in range(start, end + 1) %}
+    {% if n == page %}<span class="btn">{{ n }}</span>
+    {% else %}<a class="btn secondary" href="?{{ qs }}&sort={{ filters.sort }}&page={{ n }}">{{ n }}</a>{% endif %}
+  {% endfor %}
+  {% if page < total_pages %}
+    <a class="btn secondary" href="?{{ qs }}&sort={{ filters.sort }}&page={{ page + 1 }}">Next ›</a>
+    <a class="btn secondary" href="?{{ qs }}&sort={{ filters.sort }}&page={{ total_pages }}">Last »</a>
+  {% endif %}
+</div>
+{% endif %}
+{% endmacro %}
+
+{% if refresh_msg %}<div class="meta" style="background:#16321f; color:#8fe3ab; border:1px solid #2f5a3f; border-radius:8px; padding:8px 12px;">{{ refresh_msg }}</div>{% endif %}
+
+<div class="panel" style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:14px; flex-wrap:wrap;">
+  <div class="meta" style="margin:0;">
+    {% if rstatus.running %}🔄 Обновление выполняется…
+    {% elif rstatus.last %}Последнее обновление: {{ rstatus.last.started_at.strftime('%Y-%m-%d %H:%M') }} UTC{% if rstatus.last.ok is false %} — ошибка{% endif %}
+    {% else %}Обновлений ещё не было{% endif %}
+    {% if rstatus.next_allowed %} · следующее доступно после {{ rstatus.next_allowed.strftime('%Y-%m-%d %H:%M') }} UTC{% endif %}
+  </div>
+  <form method="post" action="/refresh">
+    <button class="btn" type="submit" {{ 'disabled' if not rstatus.can }}>🔄 Обновить сейчас</button>
+  </form>
+</div>
+
+<form class="panel" method="get" action="/">
+  <div class="filters">
+    <div><label>Min score</label><input type="number" step="1" name="min_score" value="{{ filters.min_score if filters.min_score is not none }}"></div>
+    <div><label>Max price (€)</label><input type="number" step="1000" name="max_price" value="{{ filters.max_price if filters.max_price is not none }}"></div>
+    <div>
+      <label>Typology</label>
+      <select name="typology">
+        <option value="">Any</option>
+        {% for t in typologies %}<option value="{{ t }}" {{ 'selected' if filters.typology == t }}>{{ t }}</option>{% endfor %}
+      </select>
+    </div>
+    <div>
+      <label>Municipality</label>
+      <select name="municipality">
+        <option value="">Any</option>
+        {% for m in municipalities %}<option value="{{ m }}" {{ 'selected' if filters.municipality == m }}>{{ m }}</option>{% endfor %}
+      </select>
+    </div>
+    <div><label>Max metro dist (m)</label><input type="number" step="50" name="max_distance_to_metro" value="{{ filters.max_distance_to_metro if filters.max_distance_to_metro is not none }}"></div>
+    <div><label>Min gross yield (%)</label><input type="number" step="0.1" name="min_gross_yield" value="{{ filters.min_gross_yield if filters.min_gross_yield is not none }}"></div>
+    <div><label>Per page</label><input type="number" step="10" min="10" max="200" name="limit" value="{{ filters.limit }}"></div>
+  </div>
+
+  <div class="checks">
+    <label><input type="checkbox" name="only_price_drops" value="true" {{ 'checked' if filters.only_price_drops }}> Only price drops</label>
+    <label><input type="checkbox" name="only_new" value="true" {{ 'checked' if filters.only_new }}> Only new listings</label>
+    <label><input type="checkbox" name="has_garage" value="true" {{ 'checked' if filters.has_garage }}> Has garage</label>
+    <label><input type="checkbox" name="has_elevator" value="true" {{ 'checked' if filters.has_elevator }}> Has elevator</label>
+    <label><input type="checkbox" name="exclude_ground_floor" value="true" {{ 'checked' if filters.exclude_ground_floor }}> Exclude ground floor</label>
+    <label><input type="checkbox" name="exclude_no_coordinates" value="true" {{ 'checked' if filters.exclude_no_coordinates }}> Exclude no coordinates</label>
+    <label><input type="checkbox" name="exclude_bad_neighborhoods" value="true" {{ 'checked' if filters.exclude_bad_neighborhoods }}> Exclude bad neighbourhoods</label>
+    <label><input type="checkbox" name="only_exact_location" value="true" {{ 'checked' if filters.only_exact_location }}> Only exact location</label>
+  </div>
+
+  {# preserve current column sort when re-applying filters; page resets to 1 #}
+  <input type="hidden" name="sort" value="{{ filters.sort }}">
+  <div class="actions">
+    <button class="btn" type="submit">Apply filters</button>
+    <a class="btn secondary" href="/">Reset</a>
+  </div>
+</form>
+
+<div class="meta">{{ total }} properties · page {{ page }} / {{ total_pages }} · {{ per_page }}/page · click a column header to sort</div>
+
+<div class="table-wrap">
+<table>
+  <thead>
+    <tr>
+      <th>Photo</th>
+      {{ sorth('Score', 'score_asc', 'score_desc', 'desc') }}
+      <th>Title</th>
+      {{ sorth('Price', 'price_asc', 'price_desc', 'asc', 'num') }}
+      {{ sorth('€/m²', 'ppm2_asc', 'ppm2_desc', 'asc', 'num') }}
+      <th>Type</th>
+      {{ sorth('Area', 'area_asc', 'area_desc', 'asc', 'num') }}
+      <th>Municipality / Parish</th>
+      <th>Nearest metro</th>
+      {{ sorth('Dist (m)', 'distance_asc', 'distance_desc', 'asc', 'num') }}
+      <th class="num">Est. rent</th>
+      {{ sorth('Yield', 'yield_asc', 'yield_desc', 'desc', 'num') }}
+      {{ sorth('Drop', 'drop_asc', 'drop_desc', 'desc', 'num') }}
+      <th>Garage</th><th>Elev.</th>
+      <th>Risk flags</th><th>Link</th>
+      {{ sorth('First seen', 'oldest', 'newest', 'desc') }}
+      <th>Last seen</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for r in rows %}
+    <tr>
+      <td>{% if r.thumbnail_url %}<a href="/property/{{ r.id }}"><img class="thumb" loading="lazy" src="{{ r.thumbnail_url }}" alt=""></a>{% else %}<div class="thumb-empty"></div>{% endif %}</td>
+      <td><span class="score" style="background: {{ score_color(r.total_score) }}">{{ '%.0f'|format(r.total_score) if r.total_score is not none else '—' }}</span></td>
+      <td><a href="/property/{{ r.id }}">{{ (r.title or 'Listing %s'|format(r.id))|truncate(42) }}</a>{% if r.is_new %}<span class="newbadge">NEW</span>{% endif %}{% if r.watch_status %}<span class="newbadge" style="background:{{ watch_colors.get(r.watch_status, '#444') }}; color:#0b0d10; border:none;">{{ watch_labels.get(r.watch_status, r.watch_status) }}</span>{% endif %}</td>
+      <td class="num">{{ '{:,.0f}'.format(r.price).replace(',', ' ') if r.price else '—' }} €</td>
+      <td class="num">{{ '%.0f'|format(r.price_per_m2) if r.price_per_m2 else '—' }}</td>
+      <td>{{ r.typology or '—' }}</td>
+      <td class="num">{{ '%.0f'|format(r.area_m2) if r.area_m2 else '—' }}</td>
+      <td>{{ r.municipality or '—' }}{% if r.parish %} / {{ r.parish }}{% endif %}</td>
+      <td>{{ r.nearest_metro_station or '—' }}</td>
+      <td class="num"{% if not r.exact_location %} title="Точный адрес скрыт — координаты приблизительные"{% endif %}>{% if r.distance_to_metro_m is not none %}{{ '≈' if not r.exact_location }}{{ '%.0f'|format(r.distance_to_metro_m) }}{% else %}—{% endif %}</td>
+      <td class="num">{{ '%.0f'|format(r.rental_estimate_mid) if r.rental_estimate_mid else '—' }} €</td>
+      <td class="num">{{ '%.1f'|format(r.gross_yield_percent) if r.gross_yield_percent is not none else '—' }}%</td>
+      <td class="num">{% if r.price_drop_percent %}<span class="drop">-{{ '%.1f'|format(r.price_drop_percent) }}%</span>{% else %}—{% endif %}</td>
+      <td>{{ yn(r.has_garage) }}</td>
+      <td>{{ yn(r.has_elevator) }}</td>
+      <td>{% for f in (r.bonus_flags or []) %}<span class="bonus">{{ f }}</span>{% endfor %}{% for f in (r.risk_flags or []) %}<span class="flag">{{ f }}</span>{% endfor %}</td>
+      <td>{% if r.url %}<a href="{{ r.url }}" target="_blank" rel="noopener">open</a>{% else %}—{% endif %}</td>
+      <td>{{ r.first_seen_at.strftime('%Y-%m-%d') if r.first_seen_at else '—' }}</td>
+      <td>{{ r.last_seen_at.strftime('%Y-%m-%d') if r.last_seen_at else '—' }}</td>
+    </tr>
+  {% else %}
+    <tr><td colspan="19" style="text-align:center; padding:30px; color: var(--muted);">No properties. Run an import (see README).</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+
+{{ pager() }}
+{% endblock %}

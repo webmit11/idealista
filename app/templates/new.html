@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Новинки — {{ app_name }}{% endblock %}
+{% block content %}
+
+<h2 style="margin:4px 2px;">Новинки — появились за последние {{ days }} дн.</h2>
+<form method="get" class="meta" style="display:flex; gap:8px; align-items:center;">
+  Окно:
+  <input type="number" name="days" value="{{ days }}" min="1" max="90" step="1" style="width:70px; padding:5px 7px; border-radius:7px; border:1px solid var(--line); background:#11141a; color:var(--text);">
+  дней
+  <button class="btn secondary" type="submit">Показать</button>
+  <span>· {{ total }} объектов · страница {{ page }} / {{ total_pages }}</span>
+</form>
+
+<div class="table-wrap" style="margin-top:12px;">
+<table>
+  <thead>
+    <tr>
+      <th>Photo</th><th>Score</th><th>Title</th><th class="num">Price</th><th class="num">€/m²</th>
+      <th>Type</th><th class="num">Area</th><th>Municipality / Parish</th><th>Nearest metro</th>
+      <th class="num">Yield</th><th>First seen</th><th>Link</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for r in rows %}
+    <tr>
+      <td>{% if r.thumbnail_url %}<a href="/property/{{ r.id }}"><img class="thumb" loading="lazy" src="{{ r.thumbnail_url }}" alt=""></a>{% else %}<div class="thumb-empty"></div>{% endif %}</td>
+      <td>{{ '%.0f'|format(r.total_score) if r.total_score is not none else '—' }}</td>
+      <td><a href="/property/{{ r.id }}">{{ (r.title or 'Listing %s'|format(r.id))|truncate(42) }}</a></td>
+      <td class="num">{{ '{:,.0f}'.format(r.price).replace(',', ' ') if r.price else '—' }} €</td>
+      <td class="num">{{ '%.0f'|format(r.price_per_m2) if r.price_per_m2 else '—' }}</td>
+      <td>{{ r.typology or '—' }}</td>
+      <td class="num">{{ '%.0f'|format(r.area_m2) if r.area_m2 else '—' }}</td>
+      <td>{{ r.municipality or '—' }}{% if r.parish %} / {{ r.parish }}{% endif %}</td>
+      <td>{{ r.nearest_metro_station or '—' }}</td>
+      <td class="num">{{ '%.1f'|format(r.gross_yield_percent) if r.gross_yield_percent is not none else '—' }}%</td>
+      <td>{{ r.first_seen_at.strftime('%Y-%m-%d %H:%M') if r.first_seen_at else '—' }}</td>
+      <td>{% if r.url %}<a href="{{ r.url }}" target="_blank" rel="noopener">open</a>{% else %}—{% endif %}</td>
+    </tr>
+  {% else %}
+    <tr><td colspan="12" style="text-align:center; padding:30px; color: var(--muted);">Новинок за {{ days }} дн. нет — появятся после ежедневных обновлений.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+
+{% if total_pages > 1 %}
+<div class="pager">
+  {% if page > 1 %}<a class="btn secondary" href="/new?days={{ days }}&limit={{ per_page }}&page={{ page - 1 }}">‹ Prev</a>{% endif %}
+  <span class="btn">{{ page }} / {{ total_pages }}</span>
+  {% if page < total_pages %}<a class="btn secondary" href="/new?days={{ days }}&limit={{ per_page }}&page={{ page + 1 }}">Next ›</a>{% endif %}
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,60 @@
+# Production stack: Caddy (auto-HTTPS) + app + Postgres.
+# Usage on the server:
+#   cp .env.example .env   # fill APIFY_TOKEN, TELEGRAM_*, DOMAIN, DASHBOARD_PASSWORD, POSTGRES_PASSWORD
+#   DOMAIN=idealista.example.com docker compose -f docker-compose.prod.yml up -d --build
+# Point the domain's DNS A-record at this server first.
+services:
+  db:
+    image: postgres:16-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-idealista}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-idealista}
+      POSTGRES_DB: ${POSTGRES_DB:-idealista}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-idealista}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    restart: always
+    env_file: .env
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg2://idealista:idealista@db:5432/idealista}
+    depends_on:
+      db:
+        condition: service_healthy
+    expose:
+      - "8000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    volumes:
+      - ./sample_data:/app/sample_data
+      - ./data:/app/data
+
+  caddy:
+    image: caddy:2-alpine
+    restart: always
+    depends_on:
+      - app
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN:?set DOMAIN in .env}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  pgdata:
+  caddy_data:
+  caddy_config:

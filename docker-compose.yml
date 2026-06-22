@@ -1,0 +1,53 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-idealista}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-idealista}
+      POSTGRES_DB: ${POSTGRES_DB:-idealista}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "${HOST_DB_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-idealista}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg2://idealista:idealista@db:5432/idealista}
+    depends_on:
+      db:
+        condition: service_healthy
+    expose:
+      - "8000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    volumes:
+      - ./sample_data:/app/sample_data
+      - ./data:/app/data
+      - ./exports:/app/exports
+      - ./app/templates:/app/app/templates:ro  # live template edits, no rebuild
+
+  proxy:
+    image: nginx:alpine
+    depends_on:
+      app:
+        condition: service_healthy
+    ports:
+      # http://idealista.localhost  (change PROXY_PORT if 80 is busy)
+      - "${PROXY_PORT:-80}:80"
+    volumes:
+      - ./deploy/nginx/idealista.conf:/etc/nginx/conf.d/default.conf:ro
+
+volumes:
+  pgdata:

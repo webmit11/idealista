@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+
+# Env / secrets
+.env
+
+# Data / artifacts
+*.db
+data/raw/*.json
+exports/*.xlsx
+exports/*.csv
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+
+# server/deploy artifacts
+*.sql
+*.tar.gz
+deploy.log

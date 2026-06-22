@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+{% block title %}{{ p.title or 'Property' }} — {{ app_name }}{% endblock %}
+{% block content %}
+
+<p><a href="/">&larr; Back to dashboard</a> · <a href="/watchlist">Воронка</a></p>
+
+<div class="panel" style="margin-bottom:16px;">
+  <h3 style="margin-top:0;">Воронка сделки
+    {% if p.watch_status %}<span class="newbadge" style="background:{{ watch_colors.get(p.watch_status, '#444') }}; color:#0b0d10; border:none;">{{ watch_labels.get(p.watch_status, p.watch_status) }}</span>{% endif %}
+  </h3>
+  <form method="post" action="/property/{{ p.id }}/watch" style="display:flex; gap:10px; align-items:flex-start; flex-wrap:wrap;">
+    <select name="status" style="padding:7px 8px; border-radius:7px; border:1px solid var(--line); background:#11141a; color:var(--text);">
+      <option value="">— не в воронке —</option>
+      {% for v, label, color in watch_statuses %}<option value="{{ v }}" {{ 'selected' if p.watch_status == v }}>{{ label }}</option>{% endfor %}
+    </select>
+    <textarea name="note" rows="2" placeholder="Заметка (телефон агента, что обсудили, торг…)" style="flex:1; min-width:260px; padding:7px 8px; border-radius:7px; border:1px solid var(--line); background:#11141a; color:var(--text);">{{ p.watch_note or '' }}</textarea>
+    <button class="btn" type="submit">Сохранить</button>
+  </form>
+</div>
+
+{% if p.image_urls %}
+<div class="panel" style="margin-bottom:16px;">
+  <div class="gallery">
+    {% for img in p.image_urls %}<a href="{{ img }}" target="_blank" rel="noopener"><img loading="lazy" src="{{ img }}" alt=""></a>{% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<div class="panel" style="margin-bottom:16px;">
+  <h2 style="margin-top:0;">
+    {{ p.title or 'Listing %s'|format(p.id) }}
+    {% if p.total_score is not none %}
+      <span class="score" style="background:#4f8cff; color:#fff; margin-left:8px;">{{ '%.1f'|format(p.total_score) }}</span>
+    {% endif %}
+  </h2>
+  <div class="kv">
+    <div>Price</div><div>{{ '{:,.0f}'.format(p.price).replace(',', ' ') if p.price else '—' }} €
+      {% if p.price_drop_percent %}<span class="drop">(-{{ '%.1f'|format(p.price_drop_percent) }}%, was {{ '%.0f'|format(p.previous_price) }} €)</span>{% endif %}</div>
+    <div>€/m²</div><div>{{ '%.0f'|format(p.price_per_m2) if p.price_per_m2 else '—' }}</div>
+    <div>Typology / Area</div><div>{{ p.typology or '—' }} · {{ '%.0f'|format(p.area_m2) if p.area_m2 else '—' }} m² · {{ p.rooms or '?' }} rooms · {{ p.bathrooms or '?' }} baths</div>
+    <div>Floor / Condition</div><div>{{ p.floor if p.floor is not none else '—' }} · {{ p.condition or 'unknown' }} · energy {{ p.energy_certificate or '—' }}</div>
+    <div>Elevator / Garage</div><div>{{ 'Yes' if p.has_elevator else 'No' }} / {{ 'Yes' if p.has_garage else 'No' }} · balcony {{ 'Yes' if p.has_balcony else 'No' }} · terrace {{ 'Yes' if p.has_terrace else 'No' }}</div>
+    <div>Location</div><div>{{ p.municipality or '—' }}{% if p.parish %} / {{ p.parish }}{% endif %} · {{ p.address_raw or '' }}</div>
+    <div>Nearest metro</div><div>{{ p.nearest_metro_station or '—' }} · {{ '≈' if not p.exact_location }}{{ '%.0f'|format(p.distance_to_metro_m) if p.distance_to_metro_m is not none else '—' }} m (~{{ p.walking_minutes_to_metro_estimate if p.walking_minutes_to_metro_estimate is not none else '—' }} min walk){% if not p.exact_location %} <span class="flag">приблизительно — точный адрес скрыт</span>{% endif %}</div>
+    <div>Estimated rent</div><div>{{ p.rental_estimate_low }}–{{ p.rental_estimate_high }} € (mid {{ p.rental_estimate_mid }} €)</div>
+    <div>Gross yield</div><div>{{ '%.2f'|format(p.gross_yield_percent) if p.gross_yield_percent is not none else '—' }} %</div>
+    <div>Agency / Source</div><div>{{ p.listing_agency or '—' }} · {{ p.source }} ({{ p.external_id }})</div>
+    <div>Seen</div><div>first {{ p.first_seen_at }} · last {{ p.last_seen_at }} · {{ p.days_on_market }} days on market</div>
+    <div>Risk flags</div><div>{% for f in (p.risk_flags or []) %}<span class="flag">{{ f }}</span>{% else %}none{% endfor %}</div>
+    <div>URL</div><div>{% if p.url %}<a href="{{ p.url }}" target="_blank" rel="noopener">{{ p.url }}</a>{% else %}—{% endif %}</div>
+  </div>
+</div>
+
+{% if explain %}
+<div class="panel" style="margin-bottom:16px;">
+  <h3 style="margin-top:0;">Почему такой рейтинг — {{ '%.1f'|format(explain.total) if explain.total is not none else '—' }} / 100</h3>
+  <table>
+    <thead>
+      <tr><th>Параметр</th><th>Объяснение</th><th class="num">Балл</th><th class="num">Вес</th><th class="num">Вклад</th></tr>
+    </thead>
+    <tbody>
+    {% for c in explain.components %}
+      <tr>
+        <td>{{ c.label }}</td>
+        <td style="white-space:normal; color:var(--muted);">{{ c.detail }}</td>
+        <td class="num">{{ '%.0f'|format(c.raw) if c.raw is not none else '—' }}</td>
+        <td class="num">{{ c.weight }}%</td>
+        <td class="num">+{{ c.contribution }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <div class="kv" style="margin-top:14px;">
+    <div>Сумма положительных вкладов</div><div>+{{ explain.positive_subtotal }}</div>
+    {% if explain.bonuses %}<div>Бонусы</div><div>{% for b in explain.bonuses %}<span class="bonus">{{ b.label }}</span> {% endfor %}+{{ explain.bonus_points }}</div>{% endif %}
+    {% if explain.risks %}<div>Риск-факторы</div><div>{% for r in explain.risks %}<span class="flag">{{ r.label }} −{{ r.penalty }}</span> {% endfor %}</div>{% endif %}
+    <div>Штраф за риски</div><div>−{{ explain.risk_penalty }}</div>
+    <div><b>Итог</b></div><div><b>{{ explain.positive_subtotal }}{% if explain.bonus_points %} + {{ explain.bonus_points }}{% endif %} − {{ explain.risk_penalty }} = {{ '%.1f'|format(explain.total) if explain.total is not none else '—' }}</b> <span style="color:var(--muted);">(ограничено 0–100)</span></div>
+  </div>
+</div>
+{% endif %}
+
+{% if invest %}
+<div class="panel" style="margin-bottom:16px;">
+  <h3 style="margin-top:0;">Экономика сделки</h3>
+  <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(250px,1fr)); gap:20px;">
+    <div>
+      <h4 style="margin:0 0 8px;">Затраты на покупку</h4>
+      <div class="kv">
+        <div>Цена</div><div>{{ '{:,.0f}'.format(invest.price).replace(',', ' ') }} €</div>
+        <div>IMT (налог на передачу)</div><div>{{ '{:,.0f}'.format(invest.acquisition.imt).replace(',', ' ') }} €</div>
+        <div>Imposto do Selo (0.8%)</div><div>{{ '{:,.0f}'.format(invest.acquisition.stamp_duty).replace(',', ' ') }} €</div>
+        <div>Нотариус + регистрация</div><div>{{ '{:,.0f}'.format(invest.acquisition.notary_registration).replace(',', ' ') }} €</div>
+        <div>Меблировка</div><div>{{ '{:,.0f}'.format(invest.acquisition.furnishing).replace(',', ' ') }} €</div>
+        <div><b>Итого вложения</b></div><div><b>{{ '{:,.0f}'.format(invest.acquisition.total_investment).replace(',', ' ') }} €</b></div>
+      </div>
+    </div>
+    <div>
+      <h4 style="margin:0 0 8px;">Доход и доходность</h4>
+      <div class="kv">
+        <div>Аренда (оценка)</div><div>{{ '%.0f'|format(invest.income.rent_mid) }} €/мес</div>
+        <div>Годовая аренда</div><div>{{ '{:,.0f}'.format(invest.income.annual_rent).replace(',', ' ') }} €</div>
+        <div>IMI (год, оценка)</div><div>{{ '{:,.0f}'.format(invest.income.imi).replace(',', ' ') }} €</div>
+        <div>Прочие расходы (вакансия/ремонт/упр.)</div><div>{{ '{:,.0f}'.format(invest.income.opex).replace(',', ' ') }} €</div>
+        <div>Чистый опер. доход (NOI)</div><div>{{ '{:,.0f}'.format(invest.income.noi).replace(',', ' ') }} €</div>
+        <div><b>Валовая доходность</b></div><div><b>{{ invest.income.gross_yield }}%</b></div>
+        <div><b>Чистая доходность</b></div><div><b>{{ invest.income.net_yield }}%</b></div>
+      </div>
+    </div>
+    <div>
+      <h4 style="margin:0 0 8px;">Ипотечный сценарий</h4>
+      <form method="get" style="display:flex; gap:6px; align-items:center; margin-bottom:10px; flex-wrap:wrap;">
+        <label style="font-size:11px;">LTV% <input type="number" name="ltv" value="{{ invest.mortgage.ltv_pct }}" step="5" style="width:64px;"></label>
+        <label style="font-size:11px;">ставка% <input type="number" name="rate" value="{{ invest.mortgage.rate_pct }}" step="0.1" style="width:64px;"></label>
+        <label style="font-size:11px;">срок <input type="number" name="term" value="{{ invest.mortgage.term_years }}" step="5" style="width:64px;"></label>
+        <button class="btn secondary" type="submit">Пересчитать</button>
+      </form>
+      <div class="kv">
+        <div>Кредит / первонач. взнос</div><div>{{ '{:,.0f}'.format(invest.mortgage.loan).replace(',', ' ') }} / {{ '{:,.0f}'.format(invest.mortgage.down_payment).replace(',', ' ') }} €</div>
+        <div>Нужно денег на входе</div><div>{{ '{:,.0f}'.format(invest.mortgage.cash_needed).replace(',', ' ') }} €</div>
+        <div>Платёж по кредиту</div><div>{{ '{:,.0f}'.format(invest.mortgage.monthly_payment).replace(',', ' ') }} €/мес</div>
+        <div>Денежный поток</div><div>{{ '{:,.0f}'.format(invest.mortgage.monthly_cashflow).replace(',', ' ') }} €/мес</div>
+        <div><b>Cash-on-cash</b></div><div><b>{{ invest.mortgage.cash_on_cash }}%</b></div>
+      </div>
+    </div>
+  </div>
+  <div class="meta" style="margin-top:12px;">Оценка, не налоговая/финансовая консультация. IMT — брекеты 2024 (Continente, вторичное жильё); IMI, расходы, ставка — допущения, настраиваются в .env.</div>
+</div>
+{% endif %}
+
+{% if history %}
+<div class="panel">
+  <h3 style="margin-top:0;">Price history</h3>
+  <table style="max-width:420px;">
+    <thead><tr><th>Observed at</th><th class="num">Price</th></tr></thead>
+    <tbody>
+      {% for h in history %}<tr><td>{{ h.observed_at }}</td><td class="num">{{ '%.0f'|format(h.price) }} €</td></tr>{% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+{% endblock %}

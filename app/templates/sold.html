@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Sold / Delisted — {{ app_name }}{% endblock %}
+{% block content %}
+
+<h2 style="margin:4px 2px;">Sold / delisted listings</h2>
+<div class="meta">
+  {{ total }} listings that left the market · page {{ page }} / {{ total_pages }} ·
+  <b>Last price</b> = last asking price before delisting (Idealista does not expose the notarial sold price).
+  · <a href="/exports/sold.csv">CSV</a>
+</div>
+
+<div class="table-wrap">
+<table>
+  <thead>
+    <tr>
+      <th>Photo</th><th>Score</th><th>Title</th><th class="num">Last price</th><th class="num">€/m²</th>
+      <th>Type</th><th class="num">Area</th><th>Municipality / Parish</th><th>Nearest metro</th>
+      <th class="num">Price drop</th><th class="num">Days on market</th>
+      <th>First seen</th><th>Delisted</th><th>Link</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for r in rows %}
+    <tr>
+      <td>{% if r.thumbnail_url %}<a href="/property/{{ r.id }}"><img class="thumb" loading="lazy" src="{{ r.thumbnail_url }}" alt=""></a>{% else %}<div class="thumb-empty"></div>{% endif %}</td>
+      <td>{{ '%.0f'|format(r.total_score) if r.total_score is not none else '—' }}</td>
+      <td><a href="/property/{{ r.id }}">{{ (r.title or 'Listing %s'|format(r.id))|truncate(42) }}</a></td>
+      <td class="num">{{ '{:,.0f}'.format(r.price).replace(',', ' ') if r.price else '—' }} €</td>
+      <td class="num">{{ '%.0f'|format(r.price_per_m2) if r.price_per_m2 else '—' }}</td>
+      <td>{{ r.typology or '—' }}</td>
+      <td class="num">{{ '%.0f'|format(r.area_m2) if r.area_m2 else '—' }}</td>
+      <td>{{ r.municipality or '—' }}{% if r.parish %} / {{ r.parish }}{% endif %}</td>
+      <td>{{ r.nearest_metro_station or '—' }}</td>
+      <td class="num">{% if r.price_drop_percent %}<span class="drop">-{{ '%.1f'|format(r.price_drop_percent) }}%</span>{% else %}—{% endif %}</td>
+      <td class="num">{{ r.days_on_market if r.days_on_market is not none else '—' }}</td>
+      <td>{{ r.first_seen_at.strftime('%Y-%m-%d') if r.first_seen_at else '—' }}</td>
+      <td>{{ r.delisted_at.strftime('%Y-%m-%d') if r.delisted_at else (r.last_seen_at.strftime('%Y-%m-%d') if r.last_seen_at else '—') }}</td>
+      <td>{% if r.url %}<a href="{{ r.url }}" target="_blank" rel="noopener">open</a>{% else %}—{% endif %}</td>
+    </tr>
+  {% else %}
+    <tr><td colspan="14" style="text-align:center; padding:30px; color: var(--muted);">No delisted listings yet — they appear after a full refresh removes sold/withdrawn ones.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+
+{% if total_pages > 1 %}
+<div class="pager">
+  {% if page > 1 %}<a class="btn secondary" href="/sold?limit={{ per_page }}&page={{ page - 1 }}">‹ Prev</a>{% endif %}
+  <span class="btn">{{ page }} / {{ total_pages }}</span>
+  {% if page < total_pages %}<a class="btn secondary" href="/sold?limit={{ per_page }}&page={{ page + 1 }}">Next ›</a>{% endif %}
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,42 @@
+{"ts": "2026-06-22T14:09:37.506917+00:00", "level": "INFO", "logger": "apify", "message": "starting apify run", "actor": "oJTRDX4iyfR3erNnv", "urls": 1}
+{"ts": "2026-06-22T14:19:34.659216+00:00", "level": "INFO", "logger": "apify", "message": "apify run finished", "run_id": "FgSIcFskKt7Ea7Sli", "status": "SUCCEEDED"}
+{"ts": "2026-06-22T14:19:35.830701+00:00", "level": "INFO", "logger": "apify", "message": "stored raw apify response", "file": "data/raw/apify_20260622_141935.json", "items": 500}
+{"ts": "2026-06-22T14:19:35.840056+00:00", "level": "INFO", "logger": "apify", "message": "skipped new-development listings", "skipped": 186}
+{"ts": "2026-06-22T14:19:36.370334+00:00", "level": "INFO", "logger": "ingest", "message": "area imported", "area": "Porto", "fetched": 314, "capped": true}
+{"ts": "2026-06-22T14:19:36.370518+00:00", "level": "INFO", "logger": "apify", "message": "starting apify run", "actor": "oJTRDX4iyfR3erNnv", "urls": 1}
+{"ts": "2026-06-22T14:22:06.134201+00:00", "level": "INFO", "logger": "apify", "message": "apify run finished", "run_id": "4drZ8n5agHMNtpmi2", "status": "SUCCEEDED"}
+{"ts": "2026-06-22T14:22:07.292153+00:00", "level": "INFO", "logger": "apify", "message": "stored raw apify response", "file": "data/raw/apify_20260622_142207.json", "items": 500}
+{"ts": "2026-06-22T14:22:07.301260+00:00", "level": "INFO", "logger": "apify", "message": "skipped new-development listings", "skipped": 176}
+{"ts": "2026-06-22T14:22:07.689505+00:00", "level": "INFO", "logger": "ingest", "message": "area imported", "area": "Maia", "fetched": 324, "capped": true}
+{"ts": "2026-06-22T14:22:07.689801+00:00", "level": "INFO", "logger": "apify", "message": "starting apify run", "actor": "oJTRDX4iyfR3erNnv", "urls": 1}
+{"ts": "2026-06-22T14:24:49.398311+00:00", "level": "INFO", "logger": "apify", "message": "apify run finished", "run_id": "gexkMbrd0vearMfqv", "status": "SUCCEEDED"}
+{"ts": "2026-06-22T14:24:50.613171+00:00", "level": "INFO", "logger": "apify", "message": "stored raw apify response", "file": "data/raw/apify_20260622_142450.json", "items": 500}
+{"ts": "2026-06-22T14:24:50.621153+00:00", "level": "INFO", "logger": "apify", "message": "skipped new-development listings", "skipped": 210}
+{"ts": "2026-06-22T14:24:50.923490+00:00", "level": "INFO", "logger": "ingest", "message": "area imported", "area": "Matosinhos", "fetched": 290, "capped": true}
+{"ts": "2026-06-22T14:24:50.923831+00:00", "level": "INFO", "logger": "apify", "message": "starting apify run", "actor": "oJTRDX4iyfR3erNnv", "urls": 1}
+{"ts": "2026-06-22T14:27:37.272870+00:00", "level": "INFO", "logger": "apify", "message": "apify run finished", "run_id": "DMCXCiOjXNdbby1hb", "status": "SUCCEEDED"}
+{"ts": "2026-06-22T14:27:38.343077+00:00", "level": "INFO", "logger": "apify", "message": "stored raw apify response", "file": "data/raw/apify_20260622_142738.json", "items": 500}
+{"ts": "2026-06-22T14:27:38.351242+00:00", "level": "INFO", "logger": "apify", "message": "skipped new-development listings", "skipped": 141}
+{"ts": "2026-06-22T14:27:38.807950+00:00", "level": "INFO", "logger": "ingest", "message": "area imported", "area": "Gondomar", "fetched": 359, "capped": true}
+{"ts": "2026-06-22T14:27:38.808283+00:00", "level": "INFO", "logger": "apify", "message": "starting apify run", "actor": "oJTRDX4iyfR3erNnv", "urls": 1}
+{"ts": "2026-06-22T14:29:51.882381+00:00", "level": "INFO", "logger": "apify", "message": "apify run finished", "run_id": "Cr4bEySNUmaB570GR", "status": "SUCCEEDED"}
+{"ts": "2026-06-22T14:29:53.060053+00:00", "level": "INFO", "logger": "apify", "message": "stored raw apify response", "file": "data/raw/apify_20260622_142952.json", "items": 500}
+{"ts": "2026-06-22T14:29:53.067754+00:00", "level": "INFO", "logger": "apify", "message": "skipped new-development listings", "skipped": 175}
+{"ts": "2026-06-22T14:29:53.486381+00:00", "level": "INFO", "logger": "ingest", "message": "area imported", "area": "Vila Nova de Gaia", "fetched": 325, "capped": true}
+{"ts": "2026-06-22T14:29:53.486713+00:00", "level": "INFO", "logger": "apify", "message": "starting apify run", "actor": "oJTRDX4iyfR3erNnv", "urls": 1}
+{"ts": "2026-06-22T14:31:34.794303+00:00", "level": "INFO", "logger": "apify", "message": "apify run finished", "run_id": "mgkH9Gtn7T1KMb46B", "status": "SUCCEEDED"}
+{"ts": "2026-06-22T14:31:35.881540+00:00", "level": "INFO", "logger": "apify", "message": "stored raw apify response", "file": "data/raw/apify_20260622_143135.json", "items": 311}
+{"ts": "2026-06-22T14:31:35.889549+00:00", "level": "INFO", "logger": "apify", "message": "skipped new-development listings", "skipped": 26}
+{"ts": "2026-06-22T14:31:36.234660+00:00", "level": "INFO", "logger": "ingest", "message": "area imported", "area": "Vila do Conde", "fetched": 285, "capped": false}
+{"ts": "2026-06-22T14:31:36.234984+00:00", "level": "INFO", "logger": "apify", "message": "starting apify run", "actor": "oJTRDX4iyfR3erNnv", "urls": 1}
+{"ts": "2026-06-22T14:33:28.680995+00:00", "level": "INFO", "logger": "apify", "message": "apify run finished", "run_id": "cvccSGRcdbytDFCWk", "status": "SUCCEEDED"}
+{"ts": "2026-06-22T14:33:29.790672+00:00", "level": "INFO", "logger": "apify", "message": "stored raw apify response", "file": "data/raw/apify_20260622_143329.json", "items": 355}
+{"ts": "2026-06-22T14:33:29.797773+00:00", "level": "INFO", "logger": "apify", "message": "skipped new-development listings", "skipped": 4}
+{"ts": "2026-06-22T14:33:30.150320+00:00", "level": "INFO", "logger": "ingest", "message": "area imported", "area": "Póvoa de Varzim", "fetched": 351, "capped": false}
+{"ts": "2026-06-22T14:33:30.150487+00:00", "level": "WARNING", "logger": "ingest", "message": "area cap-truncated — skipping delisting (raise max_items)", "area": "Porto"}
+{"ts": "2026-06-22T14:33:30.150697+00:00", "level": "WARNING", "logger": "ingest", "message": "area cap-truncated — skipping delisting (raise max_items)", "area": "Maia"}
+{"ts": "2026-06-22T14:33:30.150819+00:00", "level": "WARNING", "logger": "ingest", "message": "area cap-truncated — skipping delisting (raise max_items)", "area": "Matosinhos"}
+{"ts": "2026-06-22T14:33:30.150929+00:00", "level": "WARNING", "logger": "ingest", "message": "area cap-truncated — skipping delisting (raise max_items)", "area": "Gondomar"}
+{"ts": "2026-06-22T14:33:30.151024+00:00", "level": "WARNING", "logger": "ingest", "message": "area cap-truncated — skipping delisting (raise max_items)", "area": "Vila Nova de Gaia"}
+{"ts": "2026-06-22T14:33:32.106361+00:00", "level": "INFO", "logger": "ingest", "message": "areas refresh complete", "provider": "apify_idealista", "areas": 7, "fetched": 2248, "created": 4, "updated": 2244, "deactivated": 0, "scored": 2318, "alerted": 0}
+{'provider': 'apify_idealista', 'areas': 7, 'fetched': 2248, 'created': 4, 'updated': 2244, 'deactivated': 0, 'scored': 2318, 'alerted': 0}

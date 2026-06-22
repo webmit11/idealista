@@ -1,0 +1,6 @@
+# Caddy auto-HTTPS (Let's Encrypt) for the production domain.
+# Set DOMAIN in .env (e.g. idealista.example.com). Caddy obtains/renews TLS automatically.
+{$DOMAIN} {
+	encode gzip
+	reverse_proxy app:8000
+}

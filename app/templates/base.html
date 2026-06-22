@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{{ app_name }}{% endblock %}</title>
+  <style>
+    :root {
+      --bg: #0f1115; --panel: #1a1d24; --line: #2a2f3a; --text: #e6e9ef;
+      --muted: #9aa3b2; --accent: #4f8cff; --good: #2fbf71; --warn: #f5a623; --bad: #e5534b;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; background: var(--bg); color: var(--text);
+      font: 14px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 22px; border-bottom: 1px solid var(--line); background: var(--panel);
+      position: sticky; top: 0; z-index: 5;
+    }
+    header h1 { font-size: 17px; margin: 0; }
+    header .links a { margin-left: 16px; font-size: 13px; }
+    main { padding: 18px 22px 60px; }
+    .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px; }
+    .filters { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 12px; align-items: end; }
+    .filters label { display: block; font-size: 11px; color: var(--muted); margin-bottom: 4px; text-transform: uppercase; letter-spacing: .03em; }
+    .filters input, .filters select {
+      width: 100%; padding: 7px 8px; border-radius: 7px; border: 1px solid var(--line);
+      background: #11141a; color: var(--text);
+    }
+    .checks { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 12px; }
+    .checks label { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text); text-transform: none; }
+    .actions { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
+    .btn { padding: 8px 14px; border-radius: 8px; border: 1px solid var(--line); background: var(--accent); color: #fff; cursor: pointer; font-size: 13px; }
+    .btn.secondary { background: #232733; color: var(--text); }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+    .meta { color: var(--muted); font-size: 12px; margin: 14px 2px; }
+    table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+    th, td { padding: 8px 9px; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; }
+    th { color: var(--muted); font-weight: 600; position: sticky; top: 0; background: var(--panel); z-index: 2; box-shadow: inset 0 -1px 0 var(--line); }
+    th a.sorth { color: var(--muted); white-space: nowrap; }
+    th a.sorth:hover { color: var(--text); text-decoration: none; }
+    .pager { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 14px 2px 40px; }
+    .pager .btn { padding: 6px 11px; font-size: 12.5px; }
+    tr:hover td { background: #181b22; }
+    .score { font-weight: 700; padding: 2px 8px; border-radius: 20px; color: #07140c; }
+    .num { text-align: right; font-variant-numeric: tabular-nums; }
+    .yes { color: var(--good); } .no { color: var(--muted); }
+    .drop { color: var(--good); font-weight: 600; }
+    .flag { display: inline-block; background: #3a2326; color: #ffb4ac; border: 1px solid #5a2f33; border-radius: 6px; padding: 1px 6px; margin: 1px 2px; font-size: 10.5px; }
+    .bonus { display: inline-block; background: #16321f; color: #8fe3ab; border: 1px solid #2f5a3f; border-radius: 6px; padding: 1px 6px; margin: 1px 2px; font-size: 10.5px; }
+    .newbadge { display: inline-block; background: #16243a; color: #9cc2ff; border: 1px solid #2f4a6a; border-radius: 6px; padding: 1px 6px; margin-left: 4px; font-size: 10px; font-weight: 700; }
+    .thumb { width: 64px; height: 44px; object-fit: cover; border-radius: 5px; display: block; background: #11141a; }
+    .thumb-empty { width: 64px; height: 44px; border-radius: 5px; background: #11141a; }
+    .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 8px; }
+    .gallery img { width: 100%; height: 135px; object-fit: cover; border-radius: 8px; background: #11141a; }
+    #map { height: calc(100vh - 120px); width: 100%; border-radius: 10px; border: 1px solid var(--line); }
+    .leaflet-popup-content { margin: 10px 12px; font: 12.5px/1.4 -apple-system, sans-serif; }
+    .leaflet-popup-content img { width: 200px; height: 120px; object-fit: cover; border-radius: 6px; margin-bottom: 6px; }
+    .table-wrap { overflow: auto; max-height: calc(100vh - 250px); border: 1px solid var(--line); border-radius: 10px; }
+    .kv { display: grid; grid-template-columns: 220px 1fr; gap: 6px 18px; }
+    .kv div:nth-child(odd) { color: var(--muted); }
+    .bar { height: 10px; background: #11141a; border-radius: 6px; overflow: hidden; }
+    .bar > span { display: block; height: 100%; background: var(--accent); }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>{{ app_name }}</h1>
+    <div class="links">
+      <a href="/">Dashboard</a>
+      <a href="/new">Новинки</a>
+      <a href="/watchlist">Воронка</a>
+      <a href="/map">Map</a>
+      <a href="/sold">Sold/Delisted</a>
+      <a href="/docs">API docs</a>
+      <a href="/exports/properties.csv">CSV</a>
+      <a href="/exports/properties.xlsx">XLSX</a>
+    </div>
+  </header>
+  <main>{% block content %}{% endblock %}</main>
+</body>
+</html>

@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Воронка — {{ app_name }}{% endblock %}
+{% block content %}
+
+<h2 style="margin:4px 2px;">Воронка сделок — {{ total_watched }} объектов</h2>
+
+<div class="checks" style="margin-bottom:12px;">
+  <a class="btn {{ 'secondary' if active_status }}" href="/watchlist">Все ({{ total_watched }})</a>
+  {% for v, label, color in statuses %}
+    <a class="btn {{ '' if active_status == v else 'secondary' }}" href="/watchlist?status={{ v }}"
+       style="{{ 'background:%s; color:#0b0d10;'|format(color) if active_status == v }}">
+      {{ label }} ({{ counts.get(v, 0) }})
+    </a>
+  {% endfor %}
+</div>
+
+<div class="table-wrap">
+<table>
+  <thead>
+    <tr>
+      <th>Статус</th><th>Photo</th><th>Score</th><th>Title</th><th class="num">Price</th><th class="num">€/m²</th>
+      <th>Type</th><th>Municipality / Parish</th><th>Nearest metro</th><th class="num">Yield</th>
+      <th>Заметка</th><th>Состояние</th><th>Link</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for r in rows %}
+    <tr>
+      <td><span class="newbadge" style="background:{{ colors.get(r.watch_status, '#444') }}; color:#0b0d10; border:none;">{{ labels.get(r.watch_status, r.watch_status) }}</span></td>
+      <td>{% if r.thumbnail_url %}<a href="/property/{{ r.id }}"><img class="thumb" loading="lazy" src="{{ r.thumbnail_url }}" alt=""></a>{% else %}<div class="thumb-empty"></div>{% endif %}</td>
+      <td>{{ '%.0f'|format(r.total_score) if r.total_score is not none else '—' }}</td>
+      <td><a href="/property/{{ r.id }}">{{ (r.title or 'Listing %s'|format(r.id))|truncate(40) }}</a></td>
+      <td class="num">{{ '{:,.0f}'.format(r.price).replace(',', ' ') if r.price else '—' }} €</td>
+      <td class="num">{{ '%.0f'|format(r.price_per_m2) if r.price_per_m2 else '—' }}</td>
+      <td>{{ r.typology or '—' }}</td>
+      <td>{{ r.municipality or '—' }}{% if r.parish %} / {{ r.parish }}{% endif %}</td>
+      <td>{{ r.nearest_metro_station or '—' }}</td>
+      <td class="num">{{ '%.1f'|format(r.gross_yield_percent) if r.gross_yield_percent is not none else '—' }}%</td>
+      <td style="white-space:normal; max-width:280px; color:var(--muted);">{{ r.watch_note or '' }}</td>
+      <td>{% if not r.is_active %}<span class="flag">снято с рынка</span>{% else %}активно{% endif %}</td>
+      <td>{% if r.url %}<a href="{{ r.url }}" target="_blank" rel="noopener">open</a>{% else %}—{% endif %}</td>
+    </tr>
+  {% else %}
+    <tr><td colspan="13" style="text-align:center; padding:30px; color: var(--muted);">Пусто. Откройте объект и отметьте статус в блоке «Воронка сделки».</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endblock %}
