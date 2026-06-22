@@ -53,8 +53,13 @@
     .flag { display: inline-block; background: #3a2326; color: #ffb4ac; border: 1px solid #5a2f33; border-radius: 6px; padding: 1px 6px; margin: 1px 2px; font-size: 10.5px; }
     .bonus { display: inline-block; background: #16321f; color: #8fe3ab; border: 1px solid #2f5a3f; border-radius: 6px; padding: 1px 6px; margin: 1px 2px; font-size: 10.5px; }
     .newbadge { display: inline-block; background: #16243a; color: #9cc2ff; border: 1px solid #2f4a6a; border-radius: 6px; padding: 1px 6px; margin-left: 4px; font-size: 10px; font-weight: 700; }
-    .thumb { width: 64px; height: 44px; object-fit: cover; border-radius: 5px; display: block; background: #11141a; }
+    .thumb { width: 64px; height: 44px; object-fit: cover; border-radius: 5px; display: block; background: #11141a; cursor: zoom-in; }
     .thumb-empty { width: 64px; height: 44px; border-radius: 5px; background: #11141a; }
+    #thumb-preview {
+      position: fixed; z-index: 1000; pointer-events: none; display: none;
+      width: 380px; height: 270px; object-fit: cover; border-radius: 10px;
+      border: 1px solid var(--line); box-shadow: 0 12px 34px rgba(0,0,0,.6); background: #11141a;
+    }
     .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 8px; }
     .gallery img { width: 100%; height: 135px; object-fit: cover; border-radius: 8px; background: #11141a; }
     #map { height: calc(100vh - 120px); width: 100%; border-radius: 10px; border: 1px solid var(--line); }
@@ -82,5 +87,36 @@
     </div>
   </header>
   <main>{% block content %}{% endblock %}</main>
+  <script>
+  (function () {
+    var pv = document.createElement('img');
+    pv.id = 'thumb-preview';
+    document.body.appendChild(pv);
+    var GAP = 14;
+    function place(t) {
+      var r = t.getBoundingClientRect();
+      var w = pv.offsetWidth, h = pv.offsetHeight;
+      var vw = window.innerWidth, vh = window.innerHeight;
+      var left = r.right + GAP;
+      if (left + w > vw - 8) left = r.left - GAP - w;   // flip left if no room
+      if (left < 8) left = 8;
+      var top = r.top + r.height / 2 - h / 2;           // centered on the thumb
+      if (top < 8) top = 8;
+      if (top + h > vh - 8) top = vh - h - 8;
+      pv.style.left = left + 'px';
+      pv.style.top = top + 'px';
+    }
+    document.addEventListener('mouseover', function (e) {
+      var t = e.target.closest && e.target.closest('img.thumb');
+      if (!t || !t.src) return;
+      pv.src = t.src;
+      pv.style.display = 'block';
+      place(t);
+    });
+    document.addEventListener('mouseout', function (e) {
+      if (e.target.closest && e.target.closest('img.thumb')) pv.style.display = 'none';
+    });
+  })();
+  </script>
 </body>
 </html>
