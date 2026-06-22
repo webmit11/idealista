@@ -113,23 +113,119 @@ def mini_app(request: Request):
     return templates.TemplateResponse(request, "miniapp.html", {"app_name": settings.app_name})
 
 
+@app.get("/app/api/meta")
+def mini_app_meta(
+    session: Session = Depends(get_session),
+    user: dict = Depends(require_telegram_user),
+):
+    municipalities = sorted(
+        {m for m in session.exec(select(Property.municipality).where(Property.municipality != None)).all() if m}  # noqa: E711
+    )
+    typologies = sorted(
+        {t for t in session.exec(select(Property.typology).where(Property.typology != None)).all() if t}  # noqa: E711
+    )
+    return {
+        "municipalities": municipalities,
+        "typologies": typologies,
+        "watch_statuses": [{"value": v, "label": l, "color": c} for v, l, c in WATCH_STATUSES],
+    }
+
+
 @app.get("/app/api/properties")
 def mini_app_properties(
     session: Session = Depends(get_session),
     user: dict = Depends(require_telegram_user),
     sort: str = Query("score_desc"),
     limit: int = Query(50, ge=1, le=200),
+    offset: int = Query(0, ge=0),
     min_score: Optional[float] = Query(None),
+    max_price: Optional[float] = Query(None),
+    typology: Optional[str] = Query(None),
+    municipality: Optional[str] = Query(None),
+    max_distance_to_metro: Optional[float] = Query(None),
+    min_gross_yield: Optional[float] = Query(None),
     only_price_drops: bool = Query(False),
     only_new: bool = Query(False),
+    has_garage: bool = Query(False),
+    has_elevator: bool = Query(False),
+    has_terrace: bool = Query(False),
+    south_facing: bool = Query(False),
+    exclude_ground_floor: bool = Query(False),
+    exclude_no_coordinates: bool = Query(False),
+    exclude_bad_neighborhoods: bool = Query(False),
+    only_exact_location: bool = Query(False),
+    only_developments: bool = Query(False),
+    watched_only: bool = Query(False),
+    watch_status: Optional[str] = Query(None),
+    with_stats: bool = Query(False),
 ):
-    results = query_properties(
-        session,
-        sort=sort if sort in VALID_SORTS else "score_desc",
-        limit=limit, min_score=min_score,
-        only_price_drops=only_price_drops, only_new=only_new,
+    if only_developments:
+        dev = True
+    elif watched_only:
+        dev = None  # watchlist may contain developments too
+    else:
+        dev = False  # main tabs hide new developments (their own tab shows them)
+    filters = dict(
+        min_score=min_score, max_price=max_price, typology=typology or None,
+        municipality=municipality or None, max_distance_to_metro=max_distance_to_metro,
+        min_gross_yield=min_gross_yield, only_price_drops=only_price_drops, only_new=only_new,
+        has_garage=True if has_garage else None, has_elevator=True if has_elevator else None,
+        has_terrace=True if has_terrace else None, south_facing=south_facing,
+        exclude_ground_floor=exclude_ground_floor, exclude_no_coordinates=exclude_no_coordinates,
+        exclude_bad_neighborhoods=exclude_bad_neighborhoods, only_exact_location=only_exact_location,
+        only_developments=dev, watched_only=watched_only,
+        watch_status=normalize_status(watch_status) if watch_status else None,
+        active_only=not watched_only,
     )
-    return [serialize(p, s) for p, s in results]
+    sort_key = sort if sort in VALID_SORTS else "score_desc"
+    total = count_properties(session, **filters)
+    rows = [
+        serialize(p, s)
+        for p, s in query_properties(session, sort=sort_key, limit=limit, offset=offset, **filters)
+    ]
+    out: dict = {"rows": rows, "total": total}
+    if with_stats:
+        all_rows = [serialize(p, s) for p, s in query_properties(session, limit=3000, **filters)]
+        out["stats"] = _developments_stats(all_rows)
+    return out
+
+
+@app.get("/app/api/property/{property_id}")
+def mini_app_property(
+    property_id: int,
+    session: Session = Depends(get_session),
+    user: dict = Depends(require_telegram_user),
+):
+    prop = session.get(Property, property_id)
+    if not prop:
+        raise HTTPException(status_code=404, detail="Property not found")
+    score = session.get(Score, property_id)
+    data = serialize(prop, score)
+    return {
+        "property": data,
+        "explain": explain_score(data, score.explanation_json if score else None),
+        "invest": compute_investment(prop.price, prop.rental_estimate_mid, prop.typology),
+        "watch_statuses": [{"value": v, "label": l, "color": c} for v, l, c in WATCH_STATUSES],
+    }
+
+
+@app.post("/app/api/property/{property_id}/watch")
+def mini_app_set_watch(
+    property_id: int,
+    status: str = Query(""),
+    note: str = Query(""),
+    session: Session = Depends(get_session),
+    user: dict = Depends(require_telegram_user),
+):
+    prop = session.get(Property, property_id)
+    if not prop:
+        raise HTTPException(status_code=404, detail="Property not found")
+    prop.watch_status = normalize_status(status)
+    prop.watch_note = (note or "").strip() or None
+    prop.watch_updated_at = datetime.utcnow()
+    session.add(prop)
+    session.commit()
+    return {"ok": True, "watch_status": prop.watch_status, "watch_note": prop.watch_note}
 
 
 @app.post("/refresh")
