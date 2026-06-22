@@ -3,11 +3,11 @@
 
 Packages the project, uploads it over SSH, and rebuilds the prod stack.
 
-Usage:
-    SRV_PASS='<root password>' python deploy/redeploy.py
+Usage (from the project root):
+    SRV_PASS='<root password>' .venv/bin/python deploy/redeploy.py
     # optional: SRV_HOST=1.2.3.4  SRV_USER=root  REMOTE_DIR=/opt/idealista
 
-Requires `paramiko` (pip install paramiko). Run from the project root.
+Requires `paramiko` (already in .venv).
 Tip: set up SSH keys to avoid passing the password each time.
 """
 import os
