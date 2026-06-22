@@ -49,6 +49,16 @@ class Settings(BaseSettings):
     # --- Geo / metro ---
     # Walking speed used to turn metres into an estimated walking time.
     walking_speed_m_per_min: float = 80.0
+    # Optional real pedestrian routing for distance/time to the nearest station.
+    # Default "haversine" = straight-line ÷ walking_speed (no API calls, no cost).
+    # Set to "ors" (OpenRouteService, free key) or "google" (Google Directions)
+    # and provide the matching API key to get real walking routes instead.
+    routing_provider: str = "haversine"  # haversine | ors | google
+    ors_api_key: Optional[str] = None
+    google_maps_api_key: Optional[str] = None
+    # When routing, send the N nearest-by-air stations to the router and keep the
+    # one that is actually closest to WALK to (handles rivers/highways in between).
+    routing_candidates: int = 2
 
     # --- Scoring / benchmark ---
     benchmark_min_samples: int = 3

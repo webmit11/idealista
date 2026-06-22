@@ -8,7 +8,8 @@ from sqlmodel import Session, select
 from app.core.config import settings
 from app.db.models import Property, Score
 from app.services.deduplication import find_existing
-from app.services.metro_distance import nearest_station, walking_minutes
+from app.services.metro_distance import nearest_stations, walking_minutes
+from app.services.walking_router import route_walking
 from app.services.price_benchmark import benchmark_for, compute_benchmarks
 from app.services import price_history as ph
 from app.services.providers.base import DataProvider, NormalizedListing, SearchInput
@@ -35,17 +36,29 @@ def _apply_fields(prop: Property, item: NormalizedListing) -> None:
 
 
 def enrich_geo(prop: Property) -> None:
-    if prop.latitude is not None and prop.longitude is not None:
-        station, dist = nearest_station(prop.latitude, prop.longitude)
-        prop.nearest_metro_station = station.name if station else None
-        prop.distance_to_metro_m = round(dist, 1) if dist is not None else None
-        prop.walking_minutes_to_metro_estimate = walking_minutes(
-            dist, settings.walking_speed_m_per_min
-        )
-    else:
+    if prop.latitude is None or prop.longitude is None:
         prop.nearest_metro_station = None
         prop.distance_to_metro_m = None
         prop.walking_minutes_to_metro_estimate = None
+        return
+
+    origin = (prop.latitude, prop.longitude)
+    candidates = nearest_stations(prop.latitude, prop.longitude, k=settings.routing_candidates)
+    best = None  # (station, distance_m, minutes)
+    if settings.routing_provider.lower() in ("ors", "google"):
+        # Pick the candidate that is actually closest to WALK to, not just by air.
+        for station, _air in candidates:
+            route = route_walking(origin, (station.latitude, station.longitude))
+            if route and (best is None or route[1] < best[2]):
+                best = (station, route[0], route[1])
+    if best is None:  # routing disabled, or every call failed -> straight line
+        station, air = candidates[0]
+        best = (station, air, walking_minutes(air, settings.walking_speed_m_per_min))
+
+    station, dist_m, minutes = best
+    prop.nearest_metro_station = station.name
+    prop.distance_to_metro_m = round(dist_m, 1) if dist_m is not None else None
+    prop.walking_minutes_to_metro_estimate = minutes
 
 
 def enrich_financials(prop: Property) -> None:

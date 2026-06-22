@@ -39,6 +39,23 @@ def nearest_station(
     return best, best_d
 
 
+def nearest_stations(
+    lat: Optional[float],
+    lon: Optional[float],
+    k: int = 2,
+    stations: Optional[list[MetroStation]] = None,
+) -> list[tuple[MetroStation, float]]:
+    """Return the k closest stations as (station, straight_line_distance_m), nearest first."""
+    if lat is None or lon is None:
+        return []
+    stations = stations or METRO_STATIONS
+    ranked = sorted(
+        ((s, haversine_m(lat, lon, s.latitude, s.longitude)) for s in stations),
+        key=lambda sd: sd[1],
+    )
+    return ranked[: max(1, k)]
+
+
 def walking_minutes(distance_m: Optional[float], speed_m_per_min: float = 80.0) -> Optional[float]:
     """Estimated walking minutes. Default 80 m/min (~4.8 km/h)."""
     if distance_m is None:
