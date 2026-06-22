@@ -21,7 +21,7 @@
 {% if p.image_urls %}
 <div class="panel" style="margin-bottom:16px;">
   <div class="gallery">
-    {% for img in p.image_urls %}<a href="{{ img }}" target="_blank" rel="noopener"><img loading="lazy" src="{{ img }}" alt=""></a>{% endfor %}
+    {% for img in p.image_urls %}<img loading="lazy" src="{{ img }}" alt="">{% endfor %}
   </div>
 </div>
 {% endif %}

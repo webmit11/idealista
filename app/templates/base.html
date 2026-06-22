@@ -61,7 +61,7 @@
       border: 1px solid var(--line); box-shadow: 0 12px 34px rgba(0,0,0,.6); background: #11141a;
     }
     .gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 8px; }
-    .gallery img { width: 100%; height: 135px; object-fit: cover; border-radius: 8px; background: #11141a; }
+    .gallery img { width: 100%; height: 135px; object-fit: cover; border-radius: 8px; background: #11141a; cursor: zoom-in; }
     #map { height: calc(100vh - 120px); width: 100%; border-radius: 10px; border: 1px solid var(--line); }
     .leaflet-popup-content { margin: 10px 12px; font: 12.5px/1.4 -apple-system, sans-serif; }
     .leaflet-popup-content img { width: 200px; height: 120px; object-fit: cover; border-radius: 6px; margin-bottom: 6px; }
@@ -106,15 +106,16 @@
       pv.style.left = left + 'px';
       pv.style.top = top + 'px';
     }
+    var SEL = '.thumb, .gallery img';
     document.addEventListener('mouseover', function (e) {
-      var t = e.target.closest && e.target.closest('img.thumb');
+      var t = e.target.closest && e.target.closest(SEL);
       if (!t || !t.src) return;
       pv.src = t.src;
       pv.style.display = 'block';
       place(t);
     });
     document.addEventListener('mouseout', function (e) {
-      if (e.target.closest && e.target.closest('img.thumb')) pv.style.display = 'none';
+      if (e.target.closest && e.target.closest(SEL)) pv.style.display = 'none';
     });
   })();
   </script>
