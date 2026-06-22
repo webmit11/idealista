@@ -51,7 +51,7 @@
   </form>
 </div>
 
-<form class="panel" method="get" action="/">
+<form class="panel" method="get" action="/" autocomplete="off">
   <div class="filters">
     <div><label>Min score</label><input type="number" step="1" name="min_score" value="{{ filters.min_score if filters.min_score is not none }}"></div>
     <div><label>Max price (€)</label><input type="number" step="1000" name="max_price" value="{{ filters.max_price if filters.max_price is not none }}"></div>

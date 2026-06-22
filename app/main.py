@@ -94,7 +94,12 @@ async def basic_auth(request: Request, call_next):
                 status_code=401,
                 headers={"WWW-Authenticate": 'Basic realm="Porto Investment Finder"'},
             )
-    return await call_next(request)
+    response = await call_next(request)
+    # Listings change daily; never let the browser serve a stale dashboard page
+    # (a stale page is what makes applied filters/checkboxes appear to reset).
+    if "text/html" in response.headers.get("content-type", ""):
+        response.headers["Cache-Control"] = "no-store"
+    return response
 
 
 @app.get("/health")
