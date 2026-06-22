@@ -11,6 +11,7 @@ from sqlmodel import Session, select
 from app.core.config import settings
 from app.db.models import Property, Score
 from app.services.bad_neighborhoods import get_text_phrases, get_zone_keywords
+from app.services.scoring import SOUTH_FACING_KEYWORDS
 
 # Sort key -> ORDER BY expression. Each user-facing column exposes asc + desc.
 SORT_COLUMNS = {
@@ -55,6 +56,8 @@ def _apply_filters(
     only_new: bool = False,
     has_garage: Optional[bool] = None,
     has_elevator: Optional[bool] = None,
+    has_terrace: Optional[bool] = None,
+    south_facing: bool = False,
     exclude_ground_floor: bool = False,
     exclude_no_coordinates: bool = False,
     exclude_bad_neighborhoods: bool = False,
@@ -99,6 +102,15 @@ def _apply_filters(
         stmt = stmt.where(Property.has_garage == has_garage)
     if has_elevator is not None:
         stmt = stmt.where(Property.has_elevator == has_elevator)
+    if has_terrace is not None:
+        stmt = stmt.where(Property.has_terrace == has_terrace)
+    if south_facing:
+        conds = [
+            func.coalesce(col, "").ilike(f"%{kw}%")
+            for col in (Property.title, Property.description, Property.address_raw)
+            for kw in SOUTH_FACING_KEYWORDS
+        ]
+        stmt = stmt.where(or_(*conds))
     if exclude_ground_floor:
         stmt = stmt.where((Property.floor == None) | (Property.floor > 0))  # noqa: E711
     if exclude_no_coordinates:
