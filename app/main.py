@@ -30,7 +30,8 @@ from app.services.query import VALID_SORTS, count_properties, query_properties, 
 from app.services.explain import explain_score
 from app.services.investment import compute_investment
 from app.services.refresh_service import refresh_status, trigger_refresh
-from app.services.telegram_auth import require_telegram_user
+from app.services.telegram_auth import require_owner, require_subscriber, require_telegram_user
+from app.services import subscriptions, telegram_api
 from app.services.watchlist import WATCH_COLORS, WATCH_LABELS, WATCH_STATUSES, normalize_status
 
 logger = logging.getLogger("app")
@@ -61,6 +62,10 @@ async def lifespan(app: FastAPI):
         init_db()
     if settings.scheduler_enabled:
         start_scheduler()
+    if settings.telegram_webhook_secret and settings.public_base_url and settings.telegram_bot_token:
+        url = f"{settings.public_base_url.rstrip('/')}/bot/webhook/{settings.telegram_webhook_secret}"
+        ok = telegram_api.set_webhook(url, settings.telegram_webhook_secret)
+        logger.info("telegram webhook", extra={"extra_fields": {"set": ok}})
     logger.info("application started", extra={"extra_fields": {"app": settings.app_name}})
     yield
     shutdown_scheduler()
@@ -78,8 +83,8 @@ async def basic_auth(request: Request, call_next):
     """HTTP Basic auth for everything except /health (when a password is set)."""
     password = settings.dashboard_password
     path = request.url.path
-    # /app* uses Telegram initData auth instead of Basic; /health is open.
-    if password and path != "/health" and not path.startswith("/app"):
+    # /app* uses Telegram initData auth; /bot* is the Telegram webhook; /health is open.
+    if password and path != "/health" and not path.startswith("/app") and not path.startswith("/bot"):
         header = request.headers.get("authorization", "")
         ok = False
         if header.startswith("Basic "):
@@ -116,7 +121,7 @@ def mini_app(request: Request):
 @app.get("/app/api/meta")
 def mini_app_meta(
     session: Session = Depends(get_session),
-    user: dict = Depends(require_telegram_user),
+    user: dict = Depends(require_subscriber),
 ):
     municipalities = sorted(
         {m for m in session.exec(select(Property.municipality).where(Property.municipality != None)).all() if m}  # noqa: E711
@@ -134,7 +139,7 @@ def mini_app_meta(
 @app.get("/app/api/properties")
 def mini_app_properties(
     session: Session = Depends(get_session),
-    user: dict = Depends(require_telegram_user),
+    user: dict = Depends(require_subscriber),
     sort: str = Query("score_desc"),
     limit: int = Query(50, ge=1, le=200),
     offset: int = Query(0, ge=0),
@@ -183,6 +188,9 @@ def mini_app_properties(
         serialize(p, s)
         for p, s in query_properties(session, sort=sort_key, limit=limit, offset=offset, **filters)
     ]
+    if not subscriptions.is_owner(int(user["id"])):
+        for r in rows:
+            r["watch_status"] = r["watch_note"] = None
     out: dict = {"rows": rows, "total": total}
     if with_stats:
         all_rows = [serialize(p, s) for p, s in query_properties(session, limit=3000, **filters)]
@@ -194,13 +202,15 @@ def mini_app_properties(
 def mini_app_property(
     property_id: int,
     session: Session = Depends(get_session),
-    user: dict = Depends(require_telegram_user),
+    user: dict = Depends(require_subscriber),
 ):
     prop = session.get(Property, property_id)
     if not prop:
         raise HTTPException(status_code=404, detail="Property not found")
     score = session.get(Score, property_id)
     data = serialize(prop, score)
+    if not subscriptions.is_owner(int(user["id"])):
+        data["watch_status"] = data["watch_note"] = None
     return {
         "property": data,
         "explain": explain_score(data, score.explanation_json if score else None),
@@ -215,7 +225,7 @@ def mini_app_set_watch(
     status: str = Query(""),
     note: str = Query(""),
     session: Session = Depends(get_session),
-    user: dict = Depends(require_telegram_user),
+    user: dict = Depends(require_owner),
 ):
     prop = session.get(Property, property_id)
     if not prop:
@@ -226,6 +236,70 @@ def mini_app_set_watch(
     session.add(prop)
     session.commit()
     return {"ok": True, "watch_status": prop.watch_status, "watch_note": prop.watch_note}
+
+
+@app.get("/app/api/me")
+def mini_app_me(
+    session: Session = Depends(get_session),
+    user: dict = Depends(require_telegram_user),
+):
+    st = subscriptions.status(session, int(user["id"]))
+    st["price_stars"] = settings.subscription_price_stars
+    st["period_days"] = settings.subscription_period_days
+    return st
+
+
+@app.post("/app/api/subscribe")
+def mini_app_subscribe(
+    user: dict = Depends(require_telegram_user),
+):
+    """Create a Telegram Stars subscription invoice link for the current user."""
+    link = telegram_api.create_stars_subscription_link(payload=f"sub:{user['id']}")
+    if not link:
+        raise HTTPException(status_code=503, detail="Payments not available")
+    return {"link": link}
+
+
+@app.post("/bot/webhook/{secret}")
+async def telegram_webhook(secret: str, request: Request):
+    """Telegram webhook: handle Stars pre-checkout and successful payments."""
+    if not settings.telegram_webhook_secret or secret != settings.telegram_webhook_secret:
+        raise HTTPException(status_code=404, detail="Not found")
+    if request.headers.get("X-Telegram-Bot-Api-Secret-Token") != settings.telegram_webhook_secret:
+        raise HTTPException(status_code=403, detail="Bad secret token")
+    update = await request.json()
+
+    # Must approve the pre-checkout within 10s, else the payment fails.
+    if "pre_checkout_query" in update:
+        telegram_api.answer_pre_checkout(update["pre_checkout_query"]["id"], ok=True)
+        return {"ok": True}
+
+    msg = update.get("message") or {}
+    sp = msg.get("successful_payment")
+    if sp and sp.get("currency") == "XTR":
+        frm = msg.get("from") or {}
+        tid = int(frm.get("id"))
+        until = None
+        exp = sp.get("subscription_expiration_date")
+        if exp:
+            until = datetime.utcfromtimestamp(int(exp))
+        with Session(engine) as s:
+            subscriptions.activate(
+                s, tid, until=until,
+                charge_id=sp.get("telegram_payment_charge_id"),
+                is_recurring=bool(sp.get("is_recurring") or sp.get("subscription_expiration_date")),
+                user=frm,
+            )
+        telegram_api.send_message(tid, "✅ Подписка активна. Открой приложение из меню бота.")
+        return {"ok": True}
+
+    # /start — greet and point to the Mini App.
+    if msg.get("text", "").startswith("/start"):
+        telegram_api.send_message(
+            int((msg.get("from") or {}).get("id", 0)),
+            "Открой приложение через кнопку меню, оформи подписку и пользуйся аналитикой.",
+        )
+    return {"ok": True}
 
 
 @app.post("/refresh")

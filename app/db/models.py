@@ -150,3 +150,17 @@ class Score(SQLModel, table=True):
     calculated_at: datetime = Field(default_factory=utcnow)
 
     property: Optional[Property] = Relationship(back_populates="score")
+
+
+class Subscriber(SQLModel, table=True):
+    """A Telegram user with paid access (Stars subscription)."""
+    __tablename__ = "subscribers"
+
+    telegram_id: int = Field(primary_key=True)
+    username: Optional[str] = None
+    first_name: Optional[str] = None
+    subscription_until: Optional[datetime] = Field(default=None, index=True)
+    is_recurring: bool = False
+    last_charge_id: Optional[str] = None
+    created_at: datetime = Field(default_factory=utcnow)
+    updated_at: datetime = Field(default_factory=utcnow)

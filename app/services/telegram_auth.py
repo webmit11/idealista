@@ -11,9 +11,12 @@ import time
 from typing import Optional
 from urllib.parse import parse_qsl
 
-from fastapi import Header, HTTPException
+from fastapi import Depends, Header, HTTPException
+from sqlmodel import Session
 
 from app.core.config import settings
+from app.db.database import get_session
+from app.services.subscriptions import is_active, is_owner
 
 
 def validate_init_data(init_data: str, bot_token: str, max_age_seconds: int = 86400) -> Optional[dict]:
@@ -51,11 +54,26 @@ def validate_init_data(init_data: str, bot_token: str, max_age_seconds: int = 86
 
 
 def require_telegram_user(x_telegram_init_data: Optional[str] = Header(default=None)) -> dict:
-    """FastAPI dependency: validate initData and allow only the owner."""
+    """FastAPI dependency: validate initData and return the Telegram user (any valid user)."""
     data = validate_init_data(x_telegram_init_data or "", settings.telegram_bot_token or "")
     user = (data or {}).get("user") or {}
     if not user.get("id"):
         raise HTTPException(status_code=401, detail="Invalid Telegram auth")
-    if settings.telegram_owner_id and int(user["id"]) != settings.telegram_owner_id:
-        raise HTTPException(status_code=403, detail="Not authorized")
+    return user
+
+
+def require_subscriber(
+    user: dict = Depends(require_telegram_user),
+    session: Session = Depends(get_session),
+) -> dict:
+    """Validated Telegram user with active access (owner or paid subscriber)."""
+    if not is_active(session, int(user["id"])):
+        raise HTTPException(status_code=402, detail="Subscription required")
+    return user
+
+
+def require_owner(user: dict = Depends(require_telegram_user)) -> dict:
+    """Validated Telegram user that is the owner."""
+    if not is_owner(int(user["id"])):
+        raise HTTPException(status_code=403, detail="Owner only")
     return user

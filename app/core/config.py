@@ -86,8 +86,17 @@ class Settings(BaseSettings):
     # Telegram
     telegram_bot_token: Optional[str] = None
     telegram_chat_id: Optional[str] = None
-    # Telegram Mini App: only this user id may use the app (exclusive use).
+    # Telegram Mini App owner — always has full access (admin, free).
     telegram_owner_id: Optional[int] = None
+    # --- Telegram Stars subscriptions ---
+    subscription_price_stars: int = 250          # Stars charged per period
+    subscription_period_days: int = 30           # Telegram supports 30-day periods
+    subscription_title: str = "Porto Investment Finder — доступ"
+    subscription_description: str = "Доступ к аналитике объектов у метро Порту на 30 дней."
+    # Secret embedded in the bot webhook URL path (and Telegram secret_token header).
+    telegram_webhook_secret: Optional[str] = None
+    # Public HTTPS base used to register the webhook, e.g. https://aicraftpin.com
+    public_base_url: Optional[str] = None
     # Email / SMTP
     smtp_host: Optional[str] = None
     smtp_port: int = 587
