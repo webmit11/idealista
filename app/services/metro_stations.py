@@ -43,13 +43,13 @@ _STATIONS: list[tuple[str, float, float, tuple[str, ...], str]] = [
     ("Viso", 41.1742, -8.6470, ("A", "B", "C", "E", "F"), "Porto"),
     ("Ramalde", 41.1718, -8.6360, ("A", "B", "C", "E", "F"), "Porto"),
 
-    # --- Gondomar branch (line F towards Fânzeres) ---
-    ("Nasoni", 41.1719, -8.5717, ("F",), "Porto"),
-    ("Levada", 41.1740, -8.5640, ("F",), "Gondomar"),
-    ("Rio Tinto", 41.1796, -8.5560, ("F",), "Gondomar"),
-    ("Campainha", 41.1850, -8.5460, ("F",), "Gondomar"),
-    ("Baguim", 41.1900, -8.5360, ("F",), "Gondomar"),
-    ("Fânzeres", 41.1900, -8.5250, ("F",), "Gondomar"),
+    # --- Gondomar branch (line F towards Fânzeres) --- coords from OpenStreetMap
+    ("Nasoni", 41.17066, -8.57728, ("F",), "Porto"),
+    ("Levada", 41.17573, -8.56219, ("F",), "Gondomar"),
+    ("Rio Tinto", 41.17937, -8.56024, ("F",), "Gondomar"),
+    ("Campainha", 41.18336, -8.55385, ("F",), "Gondomar"),
+    ("Baguim", 41.18553, -8.54586, ("F",), "Gondomar"),
+    ("Fânzeres", 41.17127, -8.54275, ("F",), "Gondomar"),
 
     # --- Matosinhos / Senhora da Hora ---
     ("Senhora da Hora", 41.1862, -8.6555, ("A", "B", "C"), "Matosinhos"),
