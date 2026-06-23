@@ -232,20 +232,30 @@
     return r.url;
   }
 
+  function yColor(y) {
+    if (y == null) return ['#222633', '#9aa3b2'];
+    if (y >= 7)    return ['#12351f', '#7ee6a4'];
+    if (y >= 5.5)  return ['#16321f', '#8fe3ab'];
+    if (y >= 4)    return ['#3a3220', '#f5c97a'];
+    return ['#3a2326', '#ffb4ac'];
+  }
+
   function card(r) {
     const img = r.thumbnail_url ? `<img src="${r.thumbnail_url}" alt="">` : '<img alt="">';
     const yld = r.gross_yield_percent != null ? f1(r.gross_yield_percent) + '%' : '—';
+    const yc = yColor(r.gross_yield_percent);
     const dist = r.distance_to_metro_m != null ? fmt(r.distance_to_metro_m) + ' м' : '—';
     const walk = r.walking_minutes_to_metro_estimate != null ? ' · ' + r.walking_minutes_to_metro_estimate + ' мин' : '';
     const drop = r.price_drop_percent ? ` · 🔻${f1(r.price_drop_percent)}%` : '';
     const ws = r.watch_status && wmap[r.watch_status]
-      ? `<span class="badge" style="background:${wmap[r.watch_status].color}">${wmap[r.watch_status].label}</span>` : '';
+      ? ` <span class="badge" style="background:${wmap[r.watch_status].color}">${wmap[r.watch_status].label}</span>` : '';
     return `<div class="card" onclick="openDetail(${r.id})">${img}<div class="body">
       <div class="row1"><span class="score" style="background:${scoreColor(r.total_score)}">${r.total_score != null ? Math.round(r.total_score) : '—'}</span>
-        <span class="price">${eur(r.price)}</span> · ${r.typology || ''} · ${fmt(r.price_per_m2)} €/м² ${ws}</div>
-      <div class="title">${r.title || 'Listing ' + r.id}</div>
-      <div class="facts">${r.municipality || ''}${r.parish ? ' / ' + r.parish : ''}<br>
-        🚇 ${r.nearest_metro_station || '—'} · ${dist}${walk} · дох. ${yld}${drop}</div>
+        <span class="price">${eur(r.price)}</span>
+        <span style="margin-left:auto; background:${yc[0]}; color:${yc[1]}; font-size:13px; font-weight:600; padding:3px 11px; border-radius:20px; white-space:nowrap;">доход. ${yld}</span></div>
+      <div class="title">${r.title || 'Listing ' + r.id}${ws}</div>
+      <div class="facts">${r.typology || ''} · ${fmt(r.price_per_m2)} €/m² · ${r.municipality || ''}${r.parish ? ' / ' + r.parish : ''}<br>
+        🚇 ${r.nearest_metro_station || '—'} · ${dist}${walk}${drop}</div>
     </div></div>`;
   }
 
@@ -279,7 +289,6 @@
     const yn = v => v ? 'да' : '—';
     const facts = `<div class="panel"><div class="kv">
       <div><span class="k">Цена:</span> <b>${eur(r.price)}</b></div>
-      <div><span class="k">€/m²:</span> ${fmt(r.price_per_m2)}</div>
       <div><span class="k">Площадь:</span> ${fmt(r.area_m2)} m²</div>
       <div><span class="k">Комнат:</span> ${r.rooms ?? '—'}</div>
       <div><span class="k">Этаж:</span> ${r.floor ?? '—'}</div>
@@ -327,12 +336,24 @@
       <div class="field" style="margin-top:10px;"><label>Заметка</label><input id="wnote" value="${(r.watch_note || '').replace(/"/g, '&quot;')}" placeholder="телефон агента, торг…"></div>
       <button class="reset" onclick="saveNote(${r.id})">Сохранить заметку</button></div>`;
 
+    let ppm = '';
+    if (r.median_ppm2) {
+      const diff = r.ppm2_diff_pct;
+      let bg = '#222633', tc = '#c7cad3', word = 'на уровне рынка';
+      if (diff != null && diff < 0) { bg = '#16321f'; tc = '#8fe3ab'; word = 'ниже рынка'; }
+      else if (diff != null && diff > 0) { bg = '#3a2326'; tc = '#ffb4ac'; word = 'выше рынка'; }
+      ppm = `<div class="panel" style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
+        <div><div style="font-size:24px; font-weight:700;">${fmt(r.price_per_m2)} €/m²</div>
+             <div class="meta" style="margin:2px 0 0;">медиана района ${fmt(r.median_ppm2)} €/m²</div></div>
+        ${diff != null ? `<div style="text-align:center; background:${bg}; color:${tc}; padding:8px 14px; border-radius:13px;"><div style="font-size:19px; font-weight:700;">${diff > 0 ? '+' : '−'}${f1(Math.abs(diff))}%</div><div style="font-size:11px;">${word}</div></div>` : ''}
+      </div>`;
+    }
     const url = idealistaUrl(r);
     const open = url ? `<a class="open-btn" href="#" onclick="tg.openLink('${url}');return false;">Открыть на Idealista →</a>` : '';
     $('detailBody').innerHTML = gal + `<div class="pad">
       <div class="row1" style="margin-bottom:8px;"><span class="score" style="background:${scoreColor(r.total_score)}">${r.total_score != null ? Math.round(r.total_score) : '—'}</span>
         <b style="font-size:16px;">${r.title || 'Listing ' + r.id}</b></div>
-      ${facts}${why}${inv}${watch}${open}</div>`;
+      ${ppm}${facts}${why}${inv}${watch}${open}</div>`;
   }
 
   async function setWatch(id, status) {

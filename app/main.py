@@ -234,6 +234,12 @@ def mini_app_property(
     w = user_watchlist.get_map(session, int(user["id"]), [prop.id]).get(prop.id)
     data["watch_status"] = w.status if w else None
     data["watch_note"] = w.note if w else None
+    # Area median €/m² and this listing's deviation from it (negative = below market).
+    expl = (score.explanation_json or {}) if score else {}
+    med = expl.get("median_price_per_m2_benchmark")
+    ppm2 = data.get("price_per_m2")
+    data["median_ppm2"] = med
+    data["ppm2_diff_pct"] = round((ppm2 / med - 1) * 100, 1) if (ppm2 and med) else None
     return {
         "property": data,
         "explain": explain_score(data, score.explanation_json if score else None),
