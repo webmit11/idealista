@@ -38,7 +38,7 @@ from app.services.investment import compute_investment
 from app.services.scoring import compute_score
 from app.services.refresh_service import refresh_status, trigger_refresh
 from app.services.telegram_auth import require_owner, require_subscriber, require_telegram_user
-from app.services import saved_filters, subscriptions, telegram_api, user_watchlist
+from app.services import property_chat, saved_filters, subscriptions, telegram_api, user_watchlist
 from app.services.watchlist import WATCH_COLORS, WATCH_LABELS, WATCH_STATUSES, normalize_status
 
 logger = logging.getLogger("app")
@@ -321,6 +321,28 @@ def _set_al_override(session: Session, prop: Property, value: str) -> None:
         score.calculated_at = datetime.utcnow()
         session.add(score)
     session.commit()
+
+
+@app.post("/app/api/property/{property_id}/chat")
+async def mini_app_property_chat(
+    property_id: int,
+    request: Request,
+    session: Session = Depends(get_session),
+    user: dict = Depends(require_subscriber),
+):
+    prop = session.get(Property, property_id)
+    if not prop:
+        raise HTTPException(status_code=404, detail="Property not found")
+    body = await request.json()
+    score = session.get(Score, property_id)
+    expl = (score.explanation_json or {}) if score else {}
+    context = expert_facts(prop, expl)
+    if prop.expert_text:
+        context += "\n\nЭкспертная оценка: " + prop.expert_text
+    ans = property_chat.answer(context, body.get("messages") or [])
+    if not ans:
+        raise HTTPException(status_code=503, detail="Чат временно недоступен")
+    return {"answer": ans}
 
 
 @app.post("/app/api/property/{property_id}/al_override")

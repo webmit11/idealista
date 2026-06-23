@@ -116,6 +116,7 @@ class Settings(BaseSettings):
     anthropic_api_key: Optional[str] = None
     expert_llm_model: str = "claude-haiku-4-5"  # cheap/fast; switch to opus/sonnet for richer prose
     expert_vision_images: int = 5  # how many listing photos to send to the model (0 = text only)
+    chat_llm_model: str = "claude-haiku-4-5"  # per-listing Q&A chat (cheap, many turns)
     expert_per_refresh: int = 40   # max expert generations per daily refresh (covers new listings)
     expert_min_score: int = 60     # only generate expert for listings scoring at least this
     # Skip LLM expert text for listings that are BOTH far from metro and low-score

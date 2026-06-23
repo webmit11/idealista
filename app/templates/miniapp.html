@@ -281,6 +281,7 @@
 
   // ---- detail ----
   async function openDetail(id) {
+    chatLog = [];
     $('detail').classList.add('open');
     $('detailBody').innerHTML = '<div class="empty">Загрузка…</div>';
     tg.BackButton.show();
@@ -367,6 +368,11 @@
       alAdmin = `<div class="panel"><div class="meta" style="margin-bottom:6px;">Админ · AL-категория</div>${rm}${auto}</div>`;
     }
 
+    const chat = `<div class="panel"><h3>💬 Спросить про объект</h3>
+      <div id="chatBox" style="display:flex; flex-direction:column; gap:8px; margin-bottom:8px;"></div>
+      <div id="chatChips" style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px;"></div>
+      <div style="display:flex; gap:6px;"><input id="chatInput" placeholder="Ваш вопрос об этом объекте…" style="flex:1; padding:9px 11px; border-radius:10px; border:1px solid rgba(255,255,255,.12); background:rgba(255,255,255,.04); color:#e6e8ee; font-size:14px;"><button class="reset" style="width:auto; padding:0 16px;" onclick="sendChat(${r.id})">→</button></div></div>`;
+
     const cur = r.watch_status || '';
     state._cur = cur;
     const wbtns = d.watch_statuses.map(s =>
@@ -414,8 +420,9 @@
     $('detailBody').innerHTML = gal + `<div class="pad">
       <div class="row1" style="margin-bottom:8px;"><span class="score" style="background:${scoreColor(r.total_score)}">${r.total_score != null ? Math.round(r.total_score) : '—'}</span>
         <b style="font-size:15px; flex:1; min-width:0;">${r.title || 'Listing ' + r.id}</b>${heart}</div>
-      ${expert}${ppm}${facts}${mapHtml}${why}${r.has_al_license ? al : inv}${alAdmin}${watch}${open}</div>`;
+      ${expert}${ppm}${facts}${mapHtml}${why}${r.has_al_license ? al : inv}${chat}${alAdmin}${watch}${open}</div>`;
     initMap(r);
+    initChat(r.id);
   }
 
   function initMap(r) {
@@ -503,6 +510,36 @@
   async function deleteSavedFilter(id) { await apiSend('/app/api/filters/' + id, 'DELETE'); loadSavedFilters(); }
   async function toggleSavedFilter(id, active) { await apiSend('/app/api/filters/' + id + '/toggle?active=' + active, 'POST'); loadSavedFilters(); }
   async function setAl(id, value) { await apiSend('/app/api/property/' + id + '/al_override?value=' + value, 'POST'); openDetail(id); }
+
+  // ---- per-listing AI chat ----
+  let chatLog = [];
+  const CHAT_QS = ['Стоит торговаться?', 'Кому сдавать?', 'Главные риски?', 'Сравнить с районом'];
+  function renderChat() {
+    const box = $('chatBox'); if (!box) return;
+    box.innerHTML = chatLog.map(m => `<div style="align-self:${m.role === 'user' ? 'flex-end' : 'flex-start'}; max-width:88%; background:${m.role === 'user' ? '#1d3a2a' : 'rgba(255,255,255,.06)'}; color:#e6e8ee; padding:7px 11px; border-radius:13px; font-size:13.5px; line-height:1.45; white-space:pre-wrap;">${m.content.replace(/</g, '&lt;')}</div>`).join('');
+    box.scrollTop = box.scrollHeight;
+  }
+  async function sendChat(id, preset) {
+    const inp = $('chatInput');
+    const text = (preset || (inp && inp.value) || '').trim();
+    if (!text) return;
+    if (inp) inp.value = '';
+    chatLog.push({ role: 'user', content: text });
+    const typing = { role: 'assistant', content: '…' };
+    chatLog.push(typing); renderChat();
+    let res = null;
+    try { res = await apiSend('/app/api/property/' + id + '/chat', 'POST', { messages: chatLog.filter(m => m !== typing) }); } catch (e) {}
+    chatLog.pop();
+    chatLog.push({ role: 'assistant', content: (res && res.answer) || 'Не удалось ответить, попробуйте ещё раз.' });
+    renderChat();
+  }
+  function initChat(id) {
+    const chips = $('chatChips');
+    if (chips) chips.innerHTML = CHAT_QS.map(q => `<button class="chip" data-q="${q}" onclick="sendChat(${id}, this.dataset.q)">${q}</button>`).join('');
+    const inp = $('chatInput');
+    if (inp) inp.onkeydown = e => { if (e.key === 'Enter') sendChat(id); };
+    renderChat();
+  }
   function applySavedFilter(c) {
     c = c || {};
     resetFilters();
