@@ -519,6 +519,7 @@
     const chips = [];
     for (const k in f) {
       if (!f[k]) continue;
+      if (k === 'min_score' && +f[k] === 0) continue;  // 0 = no filter, hide chip
       const label = FILTER_VALUE_LABELS[k] ? FILTER_VALUE_LABELS[k](f[k]) : toggleLabels[k];
       if (!label) continue;
       chips.push(`<button class="chip on" onclick="removeFilter('${k}')">${label} ✕</button>`);
@@ -597,7 +598,9 @@
     $('areasSheet').classList.remove('open');
     resetFilters();
     const p = el.dataset.p, m = el.dataset.m;
-    state.filters = p ? { parish: p } : (m ? { municipality: m } : {});
+    const base = p ? { parish: p } : (m ? { municipality: m } : {});
+    state.filters = Object.assign(base, { min_score: '0' });  // show ALL listings in the area
+    state.sort = 'score_desc';
     state.tab = 'top';
     document.querySelectorAll('.cat').forEach(x => x.classList.toggle('active', x.dataset.id === 'top'));
     loadList(true);

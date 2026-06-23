@@ -107,7 +107,7 @@ def _apply_filters(
     if municipality:
         stmt = stmt.where(Property.municipality.ilike(f"%{municipality}%"))
     if parish:
-        stmt = stmt.where(Property.parish.ilike(parish))
+        stmt = stmt.where(func.trim(Property.parish).ilike(parish.strip()))
     if max_distance_to_metro is not None:
         stmt = stmt.where(Property.distance_to_metro_m <= max_distance_to_metro)
     if min_gross_yield is not None:
