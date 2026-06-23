@@ -62,6 +62,7 @@ def _apply_filters(
     max_price: Optional[float] = None,
     typology: Optional[str] = None,
     municipality: Optional[str] = None,
+    parish: Optional[str] = None,
     max_distance_to_metro: Optional[float] = None,
     min_gross_yield: Optional[float] = None,
     only_price_drops: bool = False,
@@ -105,6 +106,8 @@ def _apply_filters(
         stmt = stmt.where(Property.typology == typology.upper())
     if municipality:
         stmt = stmt.where(Property.municipality.ilike(f"%{municipality}%"))
+    if parish:
+        stmt = stmt.where(Property.parish.ilike(parish))
     if max_distance_to_metro is not None:
         stmt = stmt.where(Property.distance_to_metro_m <= max_distance_to_metro)
     if min_gross_yield is not None:

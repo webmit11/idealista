@@ -505,7 +505,8 @@
 
   // ---- active filter chips (visible + one-tap removable) ----
   const FILTER_VALUE_LABELS = {
-    municipality: v => 'Район: ' + v,
+    parish: v => 'Район: ' + v,
+    municipality: v => 'Город: ' + v,
     typology: v => 'Тип: ' + v,
     min_score: v => 'Балл ≥ ' + v,
     max_price: v => 'Цена ≤ ' + (+v).toLocaleString('ru-RU') + ' €',
@@ -582,7 +583,7 @@
     const rows = (data && data.rows) || [];
     if (!rows.length) { el.innerHTML = '<div class="empty">Недостаточно данных.</div>'; return; }
     el.innerHTML = rows.map((a, i) => `
-      <div class="panel" style="margin:8px 0; cursor:pointer;" onclick="openArea(this.dataset.m)" data-m="${(a.municipality || '').replace(/"/g, '')}">
+      <div class="panel" style="margin:8px 0; cursor:pointer;" onclick="openArea(this)" data-p="${(a.parish || '').replace(/"/g, '')}" data-m="${(a.municipality || '').replace(/"/g, '')}">
         <div style="display:flex; align-items:center; gap:10px;">
           <span class="score" style="background:${scoreColor(a.score)}">${a.score != null ? a.score : '—'}</span>
           <b style="flex:1; min-width:0;">${i + 1}. ${a.zone}</b>
@@ -592,11 +593,11 @@
         <div style="margin-top:6px;">${a.tags.map(t => `<span class="badge" style="background:#26314a; color:#aac4ff; margin-right:4px;">${t}</span>`).join('')}</div>
       </div>`).join('');
   }
-  function openArea(muni) {
+  function openArea(el) {
     $('areasSheet').classList.remove('open');
     resetFilters();
-    if (muni && $('f_municipality')) $('f_municipality').value = muni;
-    readFilters();
+    const p = el.dataset.p, m = el.dataset.m;
+    state.filters = p ? { parish: p } : (m ? { municipality: m } : {});
     state.tab = 'top';
     document.querySelectorAll('.cat').forEach(x => x.classList.toggle('active', x.dataset.id === 'top'));
     loadList(true);

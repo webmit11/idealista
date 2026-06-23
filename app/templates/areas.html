@@ -17,7 +17,7 @@
     {% for a in rows %}
     <tr>
       <td>{{ loop.index }}</td>
-      <td><a href="/?municipality={{ a.municipality }}&min_score=0">{{ a.zone }}</a></td>
+      <td><a href="/?{% if a.parish %}parish={{ a.parish }}{% else %}municipality={{ a.municipality }}{% endif %}&min_score=0">{{ a.zone }}</a></td>
       <td>{{ a.municipality or '—' }}</td>
       <td class="num"><span class="score" style="background:#4f8cff; color:#fff;">{{ a.score if a.score is not none else '—' }}</span></td>
       <td class="num">{{ a.count }}</td>

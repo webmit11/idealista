@@ -171,6 +171,7 @@ def mini_app_properties(
     max_price: Optional[float] = Query(None),
     typology: Optional[str] = Query(None),
     municipality: Optional[str] = Query(None),
+    parish: Optional[str] = Query(None),
     max_distance_to_metro: Optional[float] = Query(None),
     min_gross_yield: Optional[float] = Query(None),
     only_price_drops: bool = Query(False),
@@ -198,7 +199,7 @@ def mini_app_properties(
         dev = False  # main tabs hide new developments (their own tab shows them)
     filters = dict(
         min_score=min_score, max_price=max_price, typology=typology or None,
-        municipality=municipality or None, max_distance_to_metro=max_distance_to_metro,
+        municipality=municipality or None, parish=parish or None, max_distance_to_metro=max_distance_to_metro,
         min_gross_yield=min_gross_yield, only_price_drops=only_price_drops, only_new=only_new,
         has_garage=True if has_garage else None, has_elevator=True if has_elevator else None,
         has_terrace=True if has_terrace else None, south_facing=south_facing,
@@ -577,6 +578,7 @@ def dashboard(
     max_price: Optional[str] = Query(None),
     typology: Optional[str] = Query(None),
     municipality: Optional[str] = Query(None),
+    parish: Optional[str] = Query(None),
     max_distance_to_metro: Optional[str] = Query(None),
     min_gross_yield: Optional[str] = Query(None),
     only_price_drops: bool = Query(False),
@@ -609,6 +611,7 @@ def dashboard(
         max_price=_opt_float(max_price),
         typology=typology or None,
         municipality=municipality or None,
+        parish=parish or None,
         max_distance_to_metro=_opt_float(max_distance_to_metro),
         min_gross_yield=_opt_float(min_gross_yield),
         only_price_drops=only_price_drops,

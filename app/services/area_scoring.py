@@ -68,6 +68,7 @@ def compute_area_scores(session: Session) -> list:
         out.append({
             "zone": zone,
             "municipality": muni,
+            "parish": zone if (zone and zone != muni) else None,
             "count": z["n"],
             "score": round(ms) if ms is not None else None,
             "median_ppm2": round(mp) if mp else None,
