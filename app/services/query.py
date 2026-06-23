@@ -13,6 +13,17 @@ from app.db.models import Property, Score
 from app.services.bad_neighborhoods import get_text_phrases, get_zone_keywords
 from app.services.scoring import SOUTH_FACING_KEYWORDS
 
+
+def newness_cutoff(days: int) -> datetime:
+    """Cutoff for "new" listings: now - `days`, but never earlier than the
+    configured baseline so the bulk-imported seed set is never treated as new
+    (only genuinely new listings discovered after the baseline count)."""
+    cutoff = datetime.utcnow() - timedelta(days=days)
+    base = settings.new_listing_baseline
+    if base is not None and base > cutoff:
+        return base
+    return cutoff
+
 # Sort key -> ORDER BY expression. Each user-facing column exposes asc + desc.
 SORT_COLUMNS = {
     "score_desc": desc(func.coalesce(Score.total_score, 0)),
@@ -93,12 +104,9 @@ def _apply_filters(
             Property.price_drop_percent > 0,
         )
     if only_new:
-        cutoff = datetime.utcnow() - timedelta(days=settings.new_listing_days)
-        stmt = stmt.where(Property.first_seen_at >= cutoff)
+        stmt = stmt.where(Property.first_seen_at >= newness_cutoff(settings.new_listing_days))
     if new_within_days is not None:
-        stmt = stmt.where(
-            Property.first_seen_at >= datetime.utcnow() - timedelta(days=new_within_days)
-        )
+        stmt = stmt.where(Property.first_seen_at >= newness_cutoff(new_within_days))
     if watched_only:
         stmt = stmt.where(Property.watch_status != None)  # noqa: E711
     if watch_status:
@@ -230,7 +238,7 @@ def serialize(prop: Property, score: Optional[Score]) -> dict:
         "is_active": prop.is_active,
         "is_new": bool(
             prop.first_seen_at
-            and prop.first_seen_at >= datetime.utcnow() - timedelta(days=settings.new_listing_days)
+            and prop.first_seen_at >= newness_cutoff(settings.new_listing_days)
         ),
         "delisted_at": prop.delisted_at,
         "days_on_market": prop.days_on_market,

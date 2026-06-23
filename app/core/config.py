@@ -1,4 +1,5 @@
 """Application configuration loaded from environment / .env file."""
+from datetime import datetime
 from functools import lru_cache
 from typing import Optional
 
@@ -63,6 +64,10 @@ class Settings(BaseSettings):
     # --- Scoring / benchmark ---
     benchmark_min_samples: int = 3
     new_listing_days: int = 7
+    # Listings first seen before this datetime are never shown as "new" (keeps the
+    # bulk-imported seed set out of the New tab; only genuinely new listings found
+    # after this date count). Unset = pure rolling window. ISO date, e.g. 2026-06-24.
+    new_listing_baseline: Optional[datetime] = None
     # Default minimum score on the dashboard (empty "Min score" field -> this).
     # Set 0 in the field to see everything.
     dashboard_min_score: float = 50.0
