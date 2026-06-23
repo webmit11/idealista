@@ -7,6 +7,7 @@ from sqlmodel import Session, select
 
 from app.core.config import settings
 from app.db.models import Property, Score
+from app.services.al_license import detect_al_license
 from app.services.deduplication import find_existing
 from app.services.metro_distance import nearest_stations, walking_minutes
 from app.services.walking_router import route_walking
@@ -32,6 +33,7 @@ def _apply_fields(prop: Property, item: NormalizedListing) -> None:
         value = getattr(item, field, None)
         if value is not None:
             setattr(prop, field, value)
+    prop.has_al_license = detect_al_license(prop.description, prop.title)
     prop.updated_at = datetime.utcnow()
 
 

@@ -68,6 +68,7 @@ def _apply_filters(
     has_garage: Optional[bool] = None,
     has_elevator: Optional[bool] = None,
     has_terrace: Optional[bool] = None,
+    has_al_license: Optional[bool] = None,
     south_facing: bool = False,
     exclude_ground_floor: bool = False,
     exclude_no_coordinates: bool = False,
@@ -126,6 +127,8 @@ def _apply_filters(
         stmt = stmt.where(Property.has_elevator == has_elevator)
     if has_terrace is not None:
         stmt = stmt.where(Property.has_terrace == has_terrace)
+    if has_al_license is not None:
+        stmt = stmt.where(Property.has_al_license == has_al_license)
     if south_facing:
         conds = [
             func.coalesce(col, "").ilike(f"%{kw}%")
@@ -220,6 +223,7 @@ def serialize(prop: Property, score: Optional[Score]) -> dict:
         "floor": prop.floor,
         "has_elevator": prop.has_elevator,
         "has_garage": prop.has_garage,
+        "has_al_license": prop.has_al_license,
         "has_balcony": prop.has_balcony,
         "has_terrace": prop.has_terrace,
         "condition": prop.condition,

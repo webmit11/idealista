@@ -162,7 +162,7 @@
     ['only_new', 'Новинки'], ['only_price_drops', 'Снижения'], ['has_terrace', 'Терраса'],
     ['south_facing', 'Окна на юг'], ['has_garage', 'Гараж'], ['has_elevator', 'Лифт'],
     ['exclude_ground_floor', 'Без 1 этажа'], ['only_exact_location', 'Точный адрес'],
-    ['expert_positive', '👍 Эксперт +'],
+    ['expert_positive', '👍 Эксперт +'], ['has_al_license', '🏷 AL-лицензия'],
   ];
 
   let META = { municipalities: [], typologies: [], watch_statuses: [] };
@@ -258,11 +258,12 @@
     const drop = r.price_drop_percent ? ` · 🔻${f1(r.price_drop_percent)}%` : '';
     const ws = r.watch_status && wmap[r.watch_status]
       ? ` <span class="badge" style="background:${wmap[r.watch_status].color}">${wmap[r.watch_status].label}</span>` : '';
+    const al = r.has_al_license ? ` <span class="badge" style="background:#7a4ddb">🏷 AL</span>` : '';
     return `<div class="card" onclick="openDetail(${r.id})">${img}<div class="body">
       <div class="row1"><span class="score" style="background:${scoreColor(r.total_score)}">${r.total_score != null ? Math.round(r.total_score) : '—'}</span>
         <span class="price">${eur(r.price)}</span>
         <span style="margin-left:auto; background:${yc[0]}; color:${yc[1]}; font-size:13px; font-weight:600; padding:3px 11px; border-radius:20px; white-space:nowrap;">доход. ${yld}</span></div>
-      <div class="title">${r.title || 'Listing ' + r.id}${ws}</div>
+      <div class="title">${r.title || 'Listing ' + r.id}${al}${ws}</div>
       <div class="facts">${r.typology || ''} · ${fmt(r.price_per_m2)} €/m² · ${r.municipality || ''}${r.parish ? ' / ' + r.parish : ''}<br>
         🚇 ${r.nearest_metro_station || '—'} · ${dist}${walk}${drop}</div>
     </div></div>`;
@@ -308,6 +309,7 @@
       <div><span class="k">Энерго:</span> ${r.energy_certificate || '—'}</div>
       <div style="grid-column:1/3;"><span class="k">🚇</span> ${r.nearest_metro_station || '—'} · ${r.distance_to_metro_m != null ? fmt(r.distance_to_metro_m) + ' м' : '—'}${r.walking_minutes_to_metro_estimate != null ? ' · ~' + r.walking_minutes_to_metro_estimate + ' мин пешком' : ''}${r.exact_location ? '' : ' (приблизительно)'}</div>
       <div style="grid-column:1/3;"><span class="k">Доходность:</span> ${f1(r.gross_yield_percent)}% · аренда ~${eur(r.rental_estimate_mid)}/мес</div>
+      ${r.has_al_license ? `<div style="grid-column:1/3; color:#cbb4ff;"><span class="k">🏷 AL-лицензия:</span> заявлена в объявлении (краткосрочная аренда)</div>` : ''}
     </div></div>`;
 
     let why = '';

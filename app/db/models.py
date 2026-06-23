@@ -42,6 +42,8 @@ class Property(SQLModel, table=True):
     has_garage: Optional[bool] = None
     has_balcony: Optional[bool] = None
     has_terrace: Optional[bool] = None
+    # Ad states an Alojamento Local (short-term rental) licence — heuristic over text.
+    has_al_license: Optional[bool] = Field(default=None, index=True)
     condition: Optional[str] = None  # new/renovated/good/to_renovate/unknown
     energy_certificate: Optional[str] = None
 
