@@ -67,7 +67,7 @@ def generate_expert(facts: str, image_urls: Optional[list] = None) -> Tuple[Opti
         for media_type, data in _fetch_images(image_urls or []):
             content.append({"type": "image", "source": {"type": "base64", "media_type": media_type, "data": data}})
 
-        client = anthropic.Anthropic(api_key=settings.anthropic_api_key, timeout=40)
+        client = anthropic.Anthropic(api_key=settings.anthropic_api_key, timeout=40, max_retries=5)
         resp = client.messages.parse(
             model=settings.expert_llm_model,
             max_tokens=600,
