@@ -68,6 +68,10 @@ class Settings(BaseSettings):
     # bulk-imported seed set out of the New tab; only genuinely new listings found
     # after this date count). Unset = pure rolling window. ISO date, e.g. 2026-06-24.
     new_listing_baseline: Optional[datetime] = None
+    # A refresh that discovers more than this many "new" listings is catching up on
+    # incomplete coverage (old Idealista listings we hadn't seen yet), not finding
+    # genuinely new ones — so that batch is not shown as new / alerted.
+    new_listing_max_batch: int = 80
     # Default minimum score on the dashboard (empty "Min score" field -> this).
     # Set 0 in the field to see everything.
     dashboard_min_score: float = 50.0

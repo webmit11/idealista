@@ -1,6 +1,6 @@
 """Import orchestration: fetch -> enrich -> upsert -> benchmark -> score."""
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Optional
 
 from sqlmodel import Session, select
@@ -182,6 +182,23 @@ def _maybe_send_alerts(session: Session, created_ids: list[int], dropped_ids: li
         return 0
 
 
+def _demote_catchup_batch(session: Session, created_ids: list[int]) -> int:
+    """An abnormally large 'new' batch means the scraper is catching up on listings
+    it had not seen yet (old on Idealista), not finding genuinely new ones. Backdate
+    their first_seen so they don't surface as New. Returns count if it was catch-up."""
+    if len(created_ids) <= settings.new_listing_max_batch:
+        return 0
+    old = datetime.utcnow() - timedelta(days=settings.new_listing_days + 1)
+    for pid in created_ids:
+        p = session.get(Property, pid)
+        if p:
+            p.first_seen_at = old
+            session.add(p)
+    session.commit()
+    logger.info("catch-up batch demoted from New: %d listings", len(created_ids))
+    return len(created_ids)
+
+
 def _notify_saved_filters(session: Session, created_ids: list[int], dropped_ids: list[int]) -> int:
     """Per-user push: alert subscribers about new listings matching their saved searches."""
     try:
@@ -313,6 +330,8 @@ def run_areas_refresh(
                 )
                 continue
             deactivated += deactivate_unseen(session, provider.name, ids, municipality=municipality)
+    if _demote_catchup_batch(session, created_ids):
+        created_ids = []  # catch-up coverage, not genuinely new — skip New/alerts
     generate_missing_expert(session)
     scored = recalculate_scores(session)
     alerted = _maybe_send_alerts(session, created_ids, dropped_ids)
@@ -365,6 +384,8 @@ def run_import(
     if deactivate_missing and listings:
         deactivated = deactivate_unseen(session, provider.name, seen)
 
+    if _demote_catchup_batch(session, created_ids):
+        created_ids = []  # catch-up coverage, not genuinely new — skip New/alerts
     generate_missing_expert(session)
     scored = recalculate_scores(session)
     alerted = _maybe_send_alerts(session, created_ids, dropped_ids)
