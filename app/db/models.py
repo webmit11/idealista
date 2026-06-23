@@ -23,6 +23,7 @@ class Property(SQLModel, table=True):
     title: Optional[str] = None
     description: Optional[str] = None
     expert_text: Optional[str] = None  # cached LLM-written expert commentary
+    expert_delta: Optional[int] = None  # vision-based score adjustment (-10..+10)
 
     price: Optional[float] = Field(default=None, index=True)
     previous_price: Optional[float] = None

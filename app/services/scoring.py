@@ -263,10 +263,14 @@ def compute_score(prop, median_ppm2: Optional[float] = None) -> ScoreResult:
     bonus, bonus_flags = detect_bonuses(prop)
 
     positive = sum(WEIGHTS[k] * comp[k] / 100 for k in WEIGHTS)
-    total = max(0.0, min(100.0, positive - penalty + bonus))
+    # Expert photo adjustment (-10..+10): the vision model nudges the score by what
+    # it sees in the listing photos (condition, renovation, red flags). 0 if absent.
+    expert_delta = max(-10, min(10, int(getattr(prop, "expert_delta", None) or 0)))
+    total = max(0.0, min(100.0, positive - penalty + bonus + expert_delta))
     contributions = {k: round(WEIGHTS[k] * comp[k] / 100, 2) for k in WEIGHTS}
 
     explanation = {
+        "expert_photo_delta": expert_delta,
         "weights": WEIGHTS,
         "component_scores": {k: round(v, 2) for k, v in comp.items()},
         "weighted_contributions": contributions,

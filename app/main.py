@@ -32,8 +32,9 @@ from app.services.metro_stations import METRO_STATIONS
 from app.services.query import VALID_SORTS, count_properties, query_properties, serialize
 from app.services.explain import explain_score
 from app.services.expert_note import expert_note
-from app.services.expert_llm import generate_expert_text
+from app.services.expert_llm import generate_expert
 from app.services.investment import compute_investment
+from app.services.scoring import compute_score
 from app.services.refresh_service import refresh_status, trigger_refresh
 from app.services.telegram_auth import require_owner, require_subscriber, require_telegram_user
 from app.services import subscriptions, telegram_api, user_watchlist
@@ -255,16 +256,25 @@ def mini_app_property(
             f"терраса: {data.get('has_terrace')}; район: {data.get('municipality')}/{data.get('parish')}; "
             f"балл инвестпривлекательности: {data.get('total_score')}; флаги риска: {risks}; бонусы: {bonuses}."
         )
-        txt = generate_expert_text(facts, data.get("image_urls"))
+        txt, delta = generate_expert(facts, data.get("image_urls"))
         if txt:
             prop.expert_text = txt
+            prop.expert_delta = delta
             session.add(prop)
+            if score:  # re-score so the badge reflects the photo adjustment
+                result = compute_score(prop, med)
+                score.total_score = result.total_score
+                score.explanation_json = result.explanation
+                score.calculated_at = datetime.utcnow()
+                session.add(score)
+                data["total_score"] = result.total_score
             session.commit()
     return {
         "property": data,
         "explain": explain_score(data, score.explanation_json if score else None),
         "expert": expert_note(data, score.explanation_json if score else None),
         "expert_text": prop.expert_text,
+        "expert_delta": prop.expert_delta,
         "invest": compute_investment(prop.price, prop.rental_estimate_mid, prop.typology),
         "watch_statuses": [{"value": v, "label": l, "color": c} for v, l, c in WATCH_STATUSES],
     }

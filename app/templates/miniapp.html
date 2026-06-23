@@ -357,7 +357,11 @@
     let expert = '';
     if (d.expert_text) {
       const safe = d.expert_text.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
-      expert = `<div class="panel"><h3>Экспертная оценка</h3><div style="font-size:14px; line-height:1.55;">${safe}</div></div>`;
+      const dl = d.expert_delta;
+      const badge = (dl != null && dl !== 0)
+        ? `<span style="margin-left:8px; font-size:12px; font-weight:600; padding:2px 9px; border-radius:12px; background:${dl > 0 ? '#16321f' : '#3a2326'}; color:${dl > 0 ? '#8fe3ab' : '#ffb4ac'};">${dl > 0 ? '+' : ''}${dl} к баллу</span>`
+        : '';
+      expert = `<div class="panel"><h3 style="display:flex; align-items:center;">Экспертная оценка${badge}</h3><div style="font-size:14px; line-height:1.55;">${safe}</div></div>`;
     } else if (d.expert) {
       const e = d.expert;
       const pros = (e.pros || []).map(x => `<div style="font-size:13px; padding:2px 0;"><span style="color:#8fe3ab;">✓</span> ${x}</div>`).join('');
