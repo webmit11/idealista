@@ -44,7 +44,11 @@
     <div>Location</div><div>{{ p.municipality or '—' }}{% if p.parish %} / {{ p.parish }}{% endif %} · {{ p.address_raw or '' }}</div>
     <div>Nearest metro</div><div>{{ p.nearest_metro_station or '—' }} · {{ '≈' if not p.exact_location }}{{ '%.0f'|format(p.distance_to_metro_m) if p.distance_to_metro_m is not none else '—' }} m (~{{ p.walking_minutes_to_metro_estimate if p.walking_minutes_to_metro_estimate is not none else '—' }} min walk){% if not p.exact_location %} <span class="flag">приблизительно — точный адрес скрыт</span>{% endif %}</div>
     <div>Estimated rent</div><div>{{ p.rental_estimate_low }}–{{ p.rental_estimate_high }} € (mid {{ p.rental_estimate_mid }} €)</div>
+    {% if p.has_al_license and p.al_gross_yield is not none %}
+    <div>Gross yield (AL)</div><div><b>{{ '%.2f'|format(p.al_gross_yield) }} %</b> <span style="color:var(--muted);">краткосрочная аренда</span></div>
+    {% else %}
     <div>Gross yield</div><div>{{ '%.2f'|format(p.gross_yield_percent) if p.gross_yield_percent is not none else '—' }} %</div>
+    {% endif %}
     <div>Agency / Source</div><div>{{ p.listing_agency or '—' }} · {{ p.source }} ({{ p.external_id }})</div>
     <div>Seen</div><div>first {{ p.first_seen_at }} · last {{ p.last_seen_at }} · {{ p.days_on_market }} days on market</div>
     <div>Risk flags</div><div>{% for f in (p.risk_flags or []) %}<span class="flag">{{ f }}</span>{% else %}none{% endfor %}</div>
@@ -116,7 +120,7 @@
 </div>
 {% endif %}
 
-{% if invest %}
+{% if invest and not p.has_al_license %}
 <div class="panel" style="margin-bottom:16px;">
   <h3 style="margin-top:0;">Экономика сделки</h3>
   <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(250px,1fr)); gap:20px;">
@@ -166,16 +170,48 @@
 
 {% if invest and invest.al and p.has_al_license %}
 <div class="panel" style="margin-bottom:16px;">
-  <h3 style="margin-top:0;">Доход по краткосрочной аренде (AL)
+  <h3 style="margin-top:0;">Экономика — краткосрочная аренда (AL)
     <span class="newbadge" style="background:#2a1f47; color:#cbb4ff; border:none;">🏷 Airbnb-режим</span>
   </h3>
-  <div class="kv">
-    <div>Выручка / мес (валовая)</div><div>{{ '{:,.0f}'.format(invest.al.monthly_gross).replace(',', ' ') }} €</div>
-    <div>Выручка / год (валовая)</div><div>{{ '{:,.0f}'.format(invest.al.annual_gross).replace(',', ' ') }} €</div>
-    <div>Валовая доходность</div><div><b>{{ invest.al.gross_yield }}%</b></div>
-    <div>Чистая доходность (расходы {{ invest.al.opex_pct }}%)</div><div><b>{{ invest.al.net_yield }}%</b></div>
+  <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(250px,1fr)); gap:20px;">
+    <div>
+      <h4 style="margin:0 0 8px;">Затраты на покупку</h4>
+      <div class="kv">
+        <div>Цена</div><div>{{ '{:,.0f}'.format(invest.price).replace(',', ' ') }} €</div>
+        <div>IMT + гербовый</div><div>{{ '{:,.0f}'.format(invest.acquisition.imt + invest.acquisition.stamp_duty).replace(',', ' ') }} €</div>
+        <div>Нотариус + меблировка</div><div>{{ '{:,.0f}'.format(invest.acquisition.notary_registration + invest.acquisition.furnishing).replace(',', ' ') }} €</div>
+        <div><b>Итого вложения</b></div><div><b>{{ '{:,.0f}'.format(invest.acquisition.total_investment).replace(',', ' ') }} €</b></div>
+      </div>
+    </div>
+    <div>
+      <h4 style="margin:0 0 8px;">Доход (краткосрочная аренда)</h4>
+      <div class="kv">
+        <div>Выручка / мес (валовая)</div><div>{{ '{:,.0f}'.format(invest.al.monthly_gross).replace(',', ' ') }} €</div>
+        <div>Выручка / год (валовая)</div><div>{{ '{:,.0f}'.format(invest.al.annual_gross).replace(',', ' ') }} €</div>
+        <div>Расходы AL ({{ invest.al.opex_pct }}%)</div><div>{{ '{:,.0f}'.format(invest.al.opex).replace(',', ' ') }} €</div>
+        <div>Чистый опер. доход (NOI)</div><div>{{ '{:,.0f}'.format(invest.al.noi).replace(',', ' ') }} €</div>
+        <div><b>Валовая доходность</b></div><div><b>{{ invest.al.gross_yield }}%</b></div>
+        <div><b>Чистая доходность</b></div><div><b>{{ invest.al.net_yield }}%</b></div>
+      </div>
+    </div>
+    <div>
+      <h4 style="margin:0 0 8px;">Ипотечный сценарий</h4>
+      <form method="get" style="display:flex; gap:6px; align-items:center; margin-bottom:10px; flex-wrap:wrap;">
+        <label style="font-size:11px;">LTV% <input type="number" name="ltv" value="{{ invest.mortgage.ltv_pct }}" step="5" style="width:64px;"></label>
+        <label style="font-size:11px;">ставка% <input type="number" name="rate" value="{{ invest.mortgage.rate_pct }}" step="0.1" style="width:64px;"></label>
+        <label style="font-size:11px;">срок <input type="number" name="term" value="{{ invest.mortgage.term_years }}" step="5" style="width:64px;"></label>
+        <button class="btn secondary" type="submit">Пересчитать</button>
+      </form>
+      <div class="kv">
+        <div>Кредит / взнос</div><div>{{ '{:,.0f}'.format(invest.mortgage.loan).replace(',', ' ') }} / {{ '{:,.0f}'.format(invest.mortgage.down_payment).replace(',', ' ') }} €</div>
+        <div>Нужно на входе</div><div>{{ '{:,.0f}'.format(invest.mortgage.cash_needed).replace(',', ' ') }} €</div>
+        <div>Платёж по кредиту</div><div>{{ '{:,.0f}'.format(invest.mortgage.monthly_payment).replace(',', ' ') }} €/мес</div>
+        <div>Денежный поток (AL)</div><div>{{ '{:,.0f}'.format(invest.al.monthly_cashflow).replace(',', ' ') }} €/мес</div>
+        <div><b>Cash-on-cash (AL)</b></div><div><b>{{ invest.al.cash_on_cash }}%</b></div>
+      </div>
+    </div>
   </div>
-  <div class="meta" style="margin-top:10px;">Оценка ~{{ invest.al.multiplier }}× к долгосрочной аренде; расходы выше (уборка, управление, площадки, простои). Реальный доход зависит от ставки за ночь и загрузки — модель, не гарантия и не финсовет.</div>
+  <div class="meta" style="margin-top:12px;">Доход считается по краткосрочной аренде (AL): оценка ~{{ invest.al.multiplier }}× к долгосрочной, расходы выше (уборка, управление, площадки, простои). Зависит от ставки за ночь и загрузки — модель, не гарантия и не финсовет.</div>
 </div>
 {% endif %}
 

@@ -106,6 +106,8 @@ def compute_investment(
     annual_debt = round(mpay * 12, 2)
     annual_cashflow = round(noi - annual_debt, 2)
     cash_on_cash = round(annual_cashflow / cash_needed * 100, 2) if cash_needed else None
+    al_annual_cashflow = round(al_noi - annual_debt, 2)
+    al_cash_on_cash = round(al_annual_cashflow / cash_needed * 100, 2) if cash_needed else None
 
     return {
         "price": price,
@@ -125,6 +127,7 @@ def compute_investment(
             "annual_gross": al_annual_gross,
             "opex": al_opex, "opex_pct": round(settings.al_operating_cost_pct * 100),
             "noi": al_noi, "gross_yield": al_gross_yield, "net_yield": al_net_yield,
+            "monthly_cashflow": round(al_annual_cashflow / 12, 2), "cash_on_cash": al_cash_on_cash,
         },
         "mortgage": {
             "ltv_pct": round(ltv * 100, 1), "rate_pct": round(rate * 100, 2),

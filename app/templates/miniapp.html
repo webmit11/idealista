@@ -311,7 +311,9 @@
       <div><span class="k">Состояние:</span> ${r.condition || '—'}</div>
       <div><span class="k">Энерго:</span> ${r.energy_certificate || '—'}</div>
       <div style="grid-column:1/3;"><span class="k">🚇</span> ${r.nearest_metro_station || '—'} · ${r.distance_to_metro_m != null ? fmt(r.distance_to_metro_m) + ' м' : '—'}${r.walking_minutes_to_metro_estimate != null ? ' · ~' + r.walking_minutes_to_metro_estimate + ' мин пешком' : ''}${r.exact_location ? '' : ' (приблизительно)'}</div>
-      <div style="grid-column:1/3;"><span class="k">Доходность:</span> ${f1(r.gross_yield_percent)}% · аренда ~${eur(r.rental_estimate_mid)}/мес</div>
+      ${r.has_al_license && r.al_gross_yield != null
+        ? `<div style="grid-column:1/3;"><span class="k">Доходность (AL):</span> ${f1(r.al_gross_yield)}% валовая · краткосрочная аренда</div>`
+        : `<div style="grid-column:1/3;"><span class="k">Доходность:</span> ${f1(r.gross_yield_percent)}% · аренда ~${eur(r.rental_estimate_mid)}/мес</div>`}
       ${r.has_al_license ? `<div style="grid-column:1/3; color:#cbb4ff;"><span class="k">🏷 AL-лицензия:</span> заявлена в объявлении (краткосрочная аренда)</div>` : ''}
     </div></div>`;
 
@@ -343,12 +345,18 @@
 
     let al = '';
     if (iv && iv.al && r.has_al_license) {
-      const x = iv.al;
-      al = `<div class="panel"><h3 style="display:flex; align-items:center;">Доход по краткосрочной (AL)<span style="margin-left:8px; font-size:12px; font-weight:600; padding:2px 9px; border-radius:12px; background:#2a1f47; color:#cbb4ff;">🏷 Airbnb-режим</span></h3>
+      const x = iv.al, a = iv.acquisition, m = iv.mortgage;
+      al = `<div class="panel"><h3 style="display:flex; align-items:center;">Экономика — краткосрочная аренда (AL)<span style="margin-left:8px; font-size:12px; font-weight:600; padding:2px 9px; border-radius:12px; background:#2a1f47; color:#cbb4ff;">🏷 Airbnb</span></h3>
         <div class="line"><span>Выручка / мес (вал.)</span><span>${eur(x.monthly_gross)}</span></div>
         <div class="line"><span>Выручка / год (вал.)</span><span>${eur(x.annual_gross)}</span></div>
         <div class="line"><span>Валовая доходность</span><span>${f1(x.gross_yield)}%</span></div>
-        <div class="line"><span>Чистая (расходы ${x.opex_pct}%)</span><span>${f1(x.net_yield)}%</span></div>
+        <div class="line"><span>Чистая доходность (расходы ${x.opex_pct}%)</span><span>${f1(x.net_yield)}%</span></div>
+        <div class="line"><span>NOI / год</span><span>${eur(x.noi)}</span></div>
+        <div class="line"><span>Всего вход</span><span>${eur(a.total_investment)}</span></div>
+        <div class="line"><span>Ипотека ${m.ltv_pct}% @ ${m.rate_pct}%/${m.term_years}л</span><span>${eur(m.loan)}</span></div>
+        <div class="line"><span>Платёж / мес</span><span>${eur(m.monthly_payment)}</span></div>
+        <div class="line"><span>Кэшфлоу / мес</span><span>${eur(x.monthly_cashflow)}</span></div>
+        <div class="line"><span>Cash-on-cash</span><span>${f1(x.cash_on_cash)}%</span></div>
         <div class="meta" style="margin-top:6px;">Оценка ~${x.multiplier}× к долгосрочной аренде. Реальный доход зависит от ставки и загрузки — модель, не гарантия.</div></div>`;
     }
 
@@ -399,7 +407,7 @@
     $('detailBody').innerHTML = gal + `<div class="pad">
       <div class="row1" style="margin-bottom:8px;"><span class="score" style="background:${scoreColor(r.total_score)}">${r.total_score != null ? Math.round(r.total_score) : '—'}</span>
         <b style="font-size:15px; flex:1; min-width:0;">${r.title || 'Listing ' + r.id}</b>${heart}</div>
-      ${expert}${ppm}${facts}${mapHtml}${why}${al}${inv}${watch}${open}</div>`;
+      ${expert}${ppm}${facts}${mapHtml}${why}${r.has_al_license ? al : inv}${watch}${open}</div>`;
     initMap(r);
   }
 
