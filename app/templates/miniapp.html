@@ -216,7 +216,7 @@
 
   async function loadList(reset) {
     if (state.tab === 'watch') return loadWatchlist(reset);
-    $('chips').innerHTML = '';
+    renderActiveFilters();
     if (reset) { state.offset = 0; state.items = []; }
     $('meta').textContent = 'Загрузка…';
     let data;
@@ -502,6 +502,38 @@
     TOGGLES.forEach(([k]) => $('t_' + k).checked = false);
     state.filters = {}; state.sort = null;
   }
+
+  // ---- active filter chips (visible + one-tap removable) ----
+  const FILTER_VALUE_LABELS = {
+    municipality: v => 'Район: ' + v,
+    typology: v => 'Тип: ' + v,
+    min_score: v => 'Балл ≥ ' + v,
+    max_price: v => 'Цена ≤ ' + (+v).toLocaleString('ru-RU') + ' €',
+    max_distance_to_metro: v => 'Метро ≤ ' + v + ' м',
+    min_gross_yield: v => 'Доход ≥ ' + v + '%',
+  };
+  function renderActiveFilters() {
+    const f = state.filters || {};
+    const toggleLabels = Object.fromEntries(TOGGLES);
+    const chips = [];
+    for (const k in f) {
+      if (!f[k]) continue;
+      const label = FILTER_VALUE_LABELS[k] ? FILTER_VALUE_LABELS[k](f[k]) : toggleLabels[k];
+      if (!label) continue;
+      chips.push(`<button class="chip on" onclick="removeFilter('${k}')">${label} ✕</button>`);
+    }
+    $('chips').innerHTML = chips.length
+      ? `<div style="display:flex; gap:6px; flex-wrap:wrap; padding:6px 10px 2px;">${chips.join('')}<button class="chip" onclick="clearFilters()">Сбросить всё ✕</button></div>`
+      : '';
+  }
+  function removeFilter(k) {
+    delete state.filters[k];
+    const inputId = { min_score: 'f_min_score', max_price: 'f_max_price', typology: 'f_typology', municipality: 'f_municipality', max_distance_to_metro: 'f_max_dist', min_gross_yield: 'f_min_yield' }[k];
+    if (inputId && $(inputId)) $(inputId).value = '';
+    if ($('t_' + k)) $('t_' + k).checked = false;
+    loadList(true);
+  }
+  function clearFilters() { resetFilters(); loadList(true); }
 
   // ---- saved searches (subscriptions) ----
   async function apiSend(path, method, body) {
