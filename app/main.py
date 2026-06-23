@@ -38,7 +38,7 @@ from app.services.investment import compute_investment
 from app.services.scoring import compute_score
 from app.services.refresh_service import refresh_status, trigger_refresh
 from app.services.telegram_auth import require_owner, require_subscriber, require_telegram_user
-from app.services import property_chat, saved_filters, subscriptions, telegram_api, user_watchlist
+from app.services import area_scoring, property_chat, saved_filters, subscriptions, telegram_api, user_watchlist
 from app.services.watchlist import WATCH_COLORS, WATCH_LABELS, WATCH_STATUSES, normalize_status
 
 logger = logging.getLogger("app")
@@ -379,6 +379,14 @@ def mini_app_watchlist(
         "counts": user_watchlist.counts(session, uid),
         "watch_statuses": [{"value": v, "label": l, "color": c} for v, l, c in WATCH_STATUSES],
     }
+
+
+@app.get("/app/api/areas")
+def mini_app_areas(
+    session: Session = Depends(get_session),
+    user: dict = Depends(require_subscriber),
+):
+    return {"rows": area_scoring.compute_area_scores(session)}
 
 
 @app.get("/app/api/filters")
@@ -782,6 +790,15 @@ def watchlist_view(
             "active_status": active,
             "total_watched": sum(counts.values()),
         },
+    )
+
+
+@app.get("/areas", response_class=HTMLResponse)
+def areas_view(request: Request, session: Session = Depends(get_session)):
+    return templates.TemplateResponse(
+        request,
+        "areas.html",
+        {"rows": area_scoring.compute_area_scores(session), "app_name": settings.app_name},
     )
 
 

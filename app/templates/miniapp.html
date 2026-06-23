@@ -101,7 +101,10 @@
     <div class="tabs" id="tabs"></div>
     <div class="bar">
       <span class="meta" id="meta">Загрузка…</span>
-      <button class="ghost" id="filterBtn">⚙ Фильтры</button>
+      <span style="display:flex; gap:8px;">
+        <button class="ghost" id="areasBtn" style="background:var(--sec); color:var(--text);">🗺 Районы</button>
+        <button class="ghost" id="filterBtn">⚙ Фильтры</button>
+      </span>
     </div>
   </div>
   <div id="trialBanner"></div>
@@ -109,6 +112,12 @@
   <div id="stats"></div>
   <div id="list"></div>
   <button class="more" id="more" style="display:none">Показать ещё</button>
+
+  <!-- Areas sheet -->
+  <div class="overlay" id="areasSheet">
+    <div class="ohead"><b>Где покупать — районы</b><button class="x" id="areasClose">Закрыть</button></div>
+    <div class="pad"><div class="meta" style="margin-bottom:10px;">Балл = медиана инвест-баллов объектов зоны. Тап — объекты района.</div><div id="areasList"></div></div>
+  </div>
 
   <!-- Filter sheet -->
   <div class="overlay" id="filterSheet">
@@ -530,6 +539,33 @@
   async function toggleSavedFilter(id, active) { await apiSend('/app/api/filters/' + id + '/toggle?active=' + active, 'POST'); loadSavedFilters(); }
   async function setAl(id, value) { await apiSend('/app/api/property/' + id + '/al_override?value=' + value, 'POST'); openDetail(id); }
 
+  // ---- areas (where to buy) ----
+  async function loadAreas() {
+    const el = $('areasList'); el.innerHTML = '<div class="empty">Загрузка…</div>';
+    let data; try { data = await api('/app/api/areas'); } catch (e) { el.innerHTML = '<div class="empty">Доступ закрыт.</div>'; return; }
+    const rows = (data && data.rows) || [];
+    if (!rows.length) { el.innerHTML = '<div class="empty">Недостаточно данных.</div>'; return; }
+    el.innerHTML = rows.map((a, i) => `
+      <div class="panel" style="margin:8px 0; cursor:pointer;" onclick="openArea(this.dataset.m)" data-m="${(a.municipality || '').replace(/"/g, '')}">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <span class="score" style="background:${scoreColor(a.score)}">${a.score != null ? a.score : '—'}</span>
+          <b style="flex:1; min-width:0;">${i + 1}. ${a.zone}</b>
+          <span class="meta">${a.count} об.</span>
+        </div>
+        <div class="facts" style="margin-top:6px;">${a.median_ppm2 ? fmt(a.median_ppm2) + ' €/m²' : '—'} · доход. ${a.median_yield != null ? f1(a.median_yield) + '%' : '—'} · 🚇 ${a.median_metro_min != null ? a.median_metro_min + ' мин' : '—'}${a.al_count ? ' · 🏷 ' + a.al_count + ' AL' : ''}</div>
+        <div style="margin-top:6px;">${a.tags.map(t => `<span class="badge" style="background:#26314a; color:#aac4ff; margin-right:4px;">${t}</span>`).join('')}</div>
+      </div>`).join('');
+  }
+  function openArea(muni) {
+    $('areasSheet').classList.remove('open');
+    resetFilters();
+    if (muni && $('f_municipality')) $('f_municipality').value = muni;
+    readFilters();
+    state.tab = 'top';
+    document.querySelectorAll('.cat').forEach(x => x.classList.toggle('active', x.dataset.id === 'top'));
+    loadList(true);
+  }
+
   // ---- per-listing AI chat ----
   let chatLog = [];
   const CHAT_QS = ['Стоит торговаться?', 'Кому сдавать?', 'Главные риски?', 'Сравнить с районом'];
@@ -677,6 +713,8 @@
     $('toggles').innerHTML = TOGGLES.map(([k, label]) =>
       `<label class="toggle"><input type="checkbox" id="t_${k}">${label}</label>`).join('');
     $('filterBtn').onclick = () => { $('filterSheet').classList.add('open'); loadSavedFilters(); };
+    $('areasBtn').onclick = () => { $('areasSheet').classList.add('open'); loadAreas(); };
+    $('areasClose').onclick = () => $('areasSheet').classList.remove('open');
     $('filterSave').onclick = saveCurrentFilter;
     $('filterClose').onclick = () => $('filterSheet').classList.remove('open');
     $('filterApply').onclick = () => { readFilters(); $('filterSheet').classList.remove('open'); loadList(true); };
