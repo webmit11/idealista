@@ -493,11 +493,20 @@ async def telegram_webhook(secret: str, request: Request):
         telegram_api.send_message(tid, "✅ Подписка активна. Открой приложение из меню бота.")
         return {"ok": True}
 
-    # /start — greet and point to the Mini App.
+    # /start — greet and open the Mini App via a web_app button.
     if msg.get("text", "").startswith("/start"):
+        frm = msg.get("from") or {}
+        chat_id = int(frm.get("id", 0))
+        name = frm.get("first_name") or ""
+        url = f"{(settings.public_base_url or '').rstrip('/')}/app"
         telegram_api.send_message(
-            int((msg.get("from") or {}).get("id", 0)),
-            "Открой приложение через кнопку меню, оформи подписку и пользуйся аналитикой.",
+            chat_id,
+            (f"👋 Привет, {name}! " if name else "👋 ")
+            + "Это <b>Domus</b> — дом, который приносит доход.\n\n"
+            "Подбираю доходную недвижимость у метро Порту: балл доходности, разбор по фото, "
+            "краткосрочная аренда (AL), ROI-симулятор и алерты по сделкам.\n\nЖми кнопку 👇",
+            reply_markup={"inline_keyboard": [[{"text": "🏠 Открыть Domus", "web_app": {"url": url}}]]}
+            if settings.public_base_url else None,
         )
     return {"ok": True}
 
