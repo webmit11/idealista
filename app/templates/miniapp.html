@@ -361,12 +361,10 @@
     }
 
     let alAdmin = '';
-    if (ME.owner) {
-      const btns = r.has_al_license
-        ? `<button class="reset" onclick="setAl(${r.id},'not_al')">✗ Это не AL</button>`
-        : `<button class="reset" onclick="setAl(${r.id},'al')">🏷 Пометить как AL</button>`;
-      const auto = r.al_override != null ? ` <button class="reset" onclick="setAl(${r.id},'auto')">↺ Авто</button>` : '';
-      alAdmin = `<div class="panel"><div class="meta" style="margin-bottom:6px;">Админ · AL-категория: ${r.al_override != null ? 'вручную' : 'авто'}</div>${btns}${auto}</div>`;
+    if (ME.owner && (r.has_al_license || r.al_override != null)) {
+      const rm = r.has_al_license ? `<button class="reset" onclick="setAl(${r.id},'not_al')">✗ Убрать из AL</button>` : '';
+      const auto = r.al_override != null ? ` <button class="reset" onclick="setAl(${r.id},'auto')">↺ Вернуть авто</button>` : '';
+      alAdmin = `<div class="panel"><div class="meta" style="margin-bottom:6px;">Админ · AL-категория</div>${rm}${auto}</div>`;
     }
 
     const cur = r.watch_status || '';
