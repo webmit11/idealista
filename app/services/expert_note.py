@@ -86,8 +86,15 @@ def expert_note(data: dict, explanation: Optional[dict]) -> Optional[dict]:
     elif typ in ("T3", "T4", "T5"):
         audience.append("семей")
 
+    al = bool(data.get("has_al_license"))
+    if al:
+        pros.insert(0, "действующая AL-лицензия — готовый бизнес под краткосрочную аренду (новые AL в Порту во многих зонах заморожены)")
+        audience.insert(0, "инвесторов под краткосрочную аренду / Airbnb")
+
     score = data.get("total_score") or 0
-    if needs_reno and cheap:
+    if al:
+        verdict = "Готовый AL-бизнес — под краткосрочную аренду"
+    elif needs_reno and cheap:
         verdict = "Value-add: под ремонт и рост стоимости"
     elif yld is not None and yld >= 6.5:
         verdict = "Инвестиционно привлекателен — под аренду"

@@ -32,7 +32,7 @@ from app.services.metro_stations import METRO_STATIONS
 from app.services.query import VALID_SORTS, count_properties, query_properties, serialize
 from app.services.explain import explain_score
 from app.services.expert_note import expert_note
-from app.services.expert_llm import generate_expert
+from app.services.expert_llm import expert_facts, generate_expert
 from app.services.investment import compute_investment
 from app.services.scoring import compute_score
 from app.services.refresh_service import refresh_status, trigger_refresh
@@ -240,18 +240,7 @@ def _enrich_with_expert(session: Session, prop: Property, score: Optional[Score]
     data["median_ppm2"] = med
     data["ppm2_diff_pct"] = round((ppm2 / med - 1) * 100, 1) if (ppm2 and med) else None
     if prop.expert_text is None and settings.anthropic_api_key:
-        risks = ", ".join(expl.get("risk_flags") or []) or "нет"
-        bonuses = ", ".join(expl.get("bonus_flags") or []) or "нет"
-        facts = (
-            f"Тип: {data.get('typology')}; цена: {data.get('price')} €; €/m²: {data.get('price_per_m2')}; "
-            f"медиана района €/m²: {med}; отклонение от медианы: {data.get('ppm2_diff_pct')}%; "
-            f"площадь: {data.get('area_m2')} m²; доходность: {data.get('gross_yield_percent')}%; "
-            f"метро: {data.get('nearest_metro_station')} ~{data.get('walking_minutes_to_metro_estimate')} мин пешком; "
-            f"состояние: {data.get('condition')}; лифт: {data.get('has_elevator')}; гараж: {data.get('has_garage')}; "
-            f"терраса: {data.get('has_terrace')}; район: {data.get('municipality')}/{data.get('parish')}; "
-            f"балл инвестпривлекательности: {data.get('total_score')}; флаги риска: {risks}; бонусы: {bonuses}."
-        )
-        txt, delta = generate_expert(facts, data.get("image_urls"))
+        txt, delta = generate_expert(expert_facts(prop, expl), data.get("image_urls"))
         if txt:
             prop.expert_text = txt
             prop.expert_delta = delta

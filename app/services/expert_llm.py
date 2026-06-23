@@ -24,7 +24,11 @@ _SYSTEM = (
     "инвестиционную оценку с учётом того, что видно на ФОТО, относительно сухих цифр. "
     "0 — фото подтверждают данные; плюс — лучше, чем по цифрам (свежий ремонт, свет, "
     "вид); минус — хуже (убитое состояние, видимые дефекты, плесень, тёмные комнаты, "
-    "красные флаги). Опирайся только на данные и фото, ничего не выдумывай."
+    "красные флаги). Опирайся только на данные и фото, ничего не выдумывай.\n"
+    "Если в данных указана действующая AL-лицензия — анализируй объект как готовый "
+    "бизнес под краткосрочную аренду (Alojamento Local / Airbnb): говори про "
+    "краткосрочный доход и ценность самой лицензии, а не про долгосрочную аренду, и "
+    "укажи, что подойдёт инвесторам под Airbnb."
 )
 
 
@@ -40,14 +44,27 @@ def expert_facts(prop, explanation) -> str:
     bonuses = ", ".join(expl.get("bonus_flags") or []) or "нет"
     med = expl.get("median_price_per_m2_benchmark")
     g = lambda k: getattr(prop, k, None)  # noqa: E731
-    return (
+    facts = (
         f"Тип: {g('typology')}; цена: {g('price')} €; €/m2: {g('price_per_m2')}; "
-        f"медиана района €/m2: {med}; площадь: {g('area_m2')} m2; доходность: {g('gross_yield_percent')}%; "
+        f"медиана района €/m2: {med}; площадь: {g('area_m2')} m2; доходность(долгосрочная): {g('gross_yield_percent')}%; "
         f"метро: {g('nearest_metro_station')} ~{g('walking_minutes_to_metro_estimate')} мин пешком; "
         f"состояние: {g('condition')}; лифт: {g('has_elevator')}; гараж: {g('has_garage')}; "
         f"терраса: {g('has_terrace')}; район: {g('municipality')}/{g('parish')}; "
         f"флаги риска: {risks}; бонусы: {bonuses}."
     )
+    if g("has_al_license"):
+        from app.services.investment import al_multiplier
+
+        gy = g("gross_yield_percent")
+        mult = al_multiplier(g("typology"))
+        al_y = round(gy * mult, 1) if gy else None
+        facts += (
+            f" ВАЖНО: у объекта ДЕЙСТВУЮЩАЯ AL-лицензия (Alojamento Local, краткосрочная аренда). "
+            f"Анализируй его как готовый бизнес под краткосрочную аренду/Airbnb, а НЕ под долгосрочную: "
+            f"оценочная краткосрочная доходность ~{al_y}% валовая (≈{mult}× к долгосрочной, расходы выше). "
+            f"Подчеркни ценность самой лицензии — новые AL в Порту во многих зонах заморожены."
+        )
+    return facts
 
 
 def _fetch_images(urls: list) -> list:
