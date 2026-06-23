@@ -202,6 +202,38 @@ def recalculate_scores(session: Session) -> int:
     return count
 
 
+def generate_missing_expert(session: Session) -> int:
+    """Generate + cache expert commentary for the top high-score listings that
+    still lack it (covers new listings and gradually backfills). Capped per run."""
+    if not settings.anthropic_api_key or settings.expert_per_refresh <= 0:
+        return 0
+    from app.services.expert_llm import expert_facts, generate_expert
+
+    rows = session.exec(
+        select(Property, Score)
+        .join(Score, Score.property_id == Property.id)
+        .where(
+            Property.is_active == True,  # noqa: E712
+            Property.image_urls != None,  # noqa: E711
+            Property.expert_text == None,  # noqa: E711
+            Score.total_score >= settings.expert_min_score,
+        )
+        .order_by(Score.total_score.desc())
+        .limit(settings.expert_per_refresh)
+    ).all()
+    n = 0
+    for prop, sc in rows:
+        txt, delta = generate_expert(expert_facts(prop, sc.explanation_json or {}), prop.image_urls)
+        if txt:
+            prop.expert_text = txt
+            prop.expert_delta = delta
+            session.add(prop)
+            n += 1
+    if n:
+        session.commit()
+    return n
+
+
 def run_areas_refresh(
     session: Session,
     provider: DataProvider,
@@ -264,6 +296,7 @@ def run_areas_refresh(
                 )
                 continue
             deactivated += deactivate_unseen(session, provider.name, ids, municipality=municipality)
+    generate_missing_expert(session)
     scored = recalculate_scores(session)
     alerted = _maybe_send_alerts(session, created_ids, dropped_ids)
     stats = {
@@ -314,6 +347,7 @@ def run_import(
     if deactivate_missing and listings:
         deactivated = deactivate_unseen(session, provider.name, seen)
 
+    generate_missing_expert(session)
     scored = recalculate_scores(session)
     alerted = _maybe_send_alerts(session, created_ids, dropped_ids)
     stats = {

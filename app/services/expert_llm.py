@@ -33,6 +33,23 @@ class _Rating(BaseModel):
     score_delta: int
 
 
+def expert_facts(prop, explanation) -> str:
+    """Build the compact facts string fed to the model alongside the photos."""
+    expl = explanation or {}
+    risks = ", ".join(expl.get("risk_flags") or []) or "нет"
+    bonuses = ", ".join(expl.get("bonus_flags") or []) or "нет"
+    med = expl.get("median_price_per_m2_benchmark")
+    g = lambda k: getattr(prop, k, None)  # noqa: E731
+    return (
+        f"Тип: {g('typology')}; цена: {g('price')} €; €/m2: {g('price_per_m2')}; "
+        f"медиана района €/m2: {med}; площадь: {g('area_m2')} m2; доходность: {g('gross_yield_percent')}%; "
+        f"метро: {g('nearest_metro_station')} ~{g('walking_minutes_to_metro_estimate')} мин пешком; "
+        f"состояние: {g('condition')}; лифт: {g('has_elevator')}; гараж: {g('has_garage')}; "
+        f"терраса: {g('has_terrace')}; район: {g('municipality')}/{g('parish')}; "
+        f"флаги риска: {risks}; бонусы: {bonuses}."
+    )
+
+
 def _fetch_images(urls: list) -> list:
     import base64
     import httpx

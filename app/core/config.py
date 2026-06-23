@@ -107,6 +107,8 @@ class Settings(BaseSettings):
     anthropic_api_key: Optional[str] = None
     expert_llm_model: str = "claude-haiku-4-5"  # cheap/fast; switch to opus/sonnet for richer prose
     expert_vision_images: int = 5  # how many listing photos to send to the model (0 = text only)
+    expert_per_refresh: int = 40   # max expert generations per daily refresh (covers new listings)
+    expert_min_score: int = 60     # only generate expert for listings scoring at least this
     # Public HTTPS base used to register the webhook, e.g. https://aicraftpin.com
     public_base_url: Optional[str] = None
     # Email / SMTP
