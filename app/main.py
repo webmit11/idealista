@@ -31,6 +31,7 @@ from app.jobs.scheduler import shutdown_scheduler, start_scheduler
 from app.services.metro_stations import METRO_STATIONS
 from app.services.query import VALID_SORTS, count_properties, query_properties, serialize
 from app.services.explain import explain_score
+from app.services.expert_note import expert_note
 from app.services.investment import compute_investment
 from app.services.refresh_service import refresh_status, trigger_refresh
 from app.services.telegram_auth import require_owner, require_subscriber, require_telegram_user
@@ -243,6 +244,7 @@ def mini_app_property(
     return {
         "property": data,
         "explain": explain_score(data, score.explanation_json if score else None),
+        "expert": expert_note(data, score.explanation_json if score else None),
         "invest": compute_investment(prop.price, prop.rental_estimate_mid, prop.typology),
         "watch_statuses": [{"value": v, "label": l, "color": c} for v, l, c in WATCH_STATUSES],
     }

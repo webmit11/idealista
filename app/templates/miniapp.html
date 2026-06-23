@@ -354,6 +354,16 @@
     }
     const url = idealistaUrl(r);
     const open = url ? `<a class="open-btn" href="#" onclick="tg.openLink('${url}');return false;">Открыть на Idealista →</a>` : '';
+    let expert = '';
+    if (d.expert) {
+      const e = d.expert;
+      const pros = (e.pros || []).map(x => `<div style="font-size:13px; padding:2px 0;"><span style="color:#8fe3ab;">✓</span> ${x}</div>`).join('');
+      const cons = (e.cons || []).map(x => `<div style="font-size:13px; padding:2px 0;"><span style="color:#ffb4ac;">!</span> ${x}</div>`).join('');
+      expert = `<div class="panel"><h3>Экспертная оценка</h3>
+        <div style="font-weight:600; font-size:15px; margin-bottom:8px;">${e.verdict}</div>
+        ${pros}${cons}
+        <div class="meta" style="margin-top:8px;">${e.audience}</div></div>`;
+    }
     const heart = `<button class="heart ${cur === 'interested' ? '' : 'off'}" onclick="toggleHeart(${r.id})" aria-label="В воронку">♥</button>`;
     const mapHtml = (r.latitude != null && r.longitude != null)
       ? `<div class="panel" style="padding:0; overflow:hidden;"><div id="omap" style="height:190px;"></div>${r.exact_location ? '' : '<div class="meta" style="padding:8px 12px;">Приблизительная зона — точный адрес скрыт</div>'}</div>`
@@ -361,7 +371,7 @@
     $('detailBody').innerHTML = gal + `<div class="pad">
       <div class="row1" style="margin-bottom:8px;"><span class="score" style="background:${scoreColor(r.total_score)}">${r.total_score != null ? Math.round(r.total_score) : '—'}</span>
         <b style="font-size:15px; flex:1; min-width:0;">${r.title || 'Listing ' + r.id}</b>${heart}</div>
-      ${ppm}${facts}${mapHtml}${why}${inv}${watch}${open}</div>`;
+      ${expert}${ppm}${facts}${mapHtml}${why}${inv}${watch}${open}</div>`;
     initMap(r);
   }
 
