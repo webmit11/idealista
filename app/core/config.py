@@ -106,6 +106,7 @@ class Settings(BaseSettings):
     # and cached; otherwise the deterministic rule-based note is used.
     anthropic_api_key: Optional[str] = None
     expert_llm_model: str = "claude-haiku-4-5"  # cheap/fast; switch to opus/sonnet for richer prose
+    expert_vision_images: int = 5  # how many listing photos to send to the model (0 = text only)
     # Public HTTPS base used to register the webhook, e.g. https://aicraftpin.com
     public_base_url: Optional[str] = None
     # Email / SMTP

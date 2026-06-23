@@ -255,7 +255,7 @@ def mini_app_property(
             f"терраса: {data.get('has_terrace')}; район: {data.get('municipality')}/{data.get('parish')}; "
             f"балл инвестпривлекательности: {data.get('total_score')}; флаги риска: {risks}; бонусы: {bonuses}."
         )
-        txt = generate_expert_text(facts)
+        txt = generate_expert_text(facts, data.get("image_urls"))
         if txt:
             prop.expert_text = txt
             session.add(prop)
