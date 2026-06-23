@@ -503,9 +503,9 @@ async def telegram_webhook(secret: str, request: Request):
         telegram_api.send_message(
             chat_id,
             (f"👋 Привет, {name}! " if name else "👋 ")
-            + "Это <b>Domus</b> — дом, который приносит доход.\n\n"
-            "Подбираю доходную недвижимость у метро Порту: балл доходности, разбор по фото, "
-            "краткосрочная аренда (AL), ROI-симулятор и алерты по сделкам.\n\nЖми кнопку 👇",
+            + "Это <b>Domus</b> — недвижимость в Порту для жизни и дохода.\n\n"
+            "Подбираю квартиры у метро Порту — и под себя, и под доход: балл, разбор по фото, "
+            "расчёт аренды (в т.ч. краткосрочной AL), ROI-симулятор и алерты по сделкам.\n\nЖми кнопку 👇",
             reply_markup={"inline_keyboard": [[{"text": "🏠 Открыть Domus", "web_app": {"url": url}}]]}
             if settings.public_base_url else None,
         )
