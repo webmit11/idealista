@@ -101,6 +101,11 @@ class Settings(BaseSettings):
     # with tribute_api_key). Takes precedence over Stars.
     tribute_api_key: Optional[str] = None
     tribute_subscription_url: Optional[str] = None
+    # Optional LLM-written expert commentary on the property detail (Claude API).
+    # When anthropic_api_key is set, a unique paragraph is generated per property
+    # and cached; otherwise the deterministic rule-based note is used.
+    anthropic_api_key: Optional[str] = None
+    expert_llm_model: str = "claude-haiku-4-5"  # cheap/fast; switch to opus/sonnet for richer prose
     # Public HTTPS base used to register the webhook, e.g. https://aicraftpin.com
     public_base_url: Optional[str] = None
     # Email / SMTP

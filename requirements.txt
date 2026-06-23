@@ -12,3 +12,4 @@ openpyxl>=3.1
 APScheduler>=3.10,<4.0
 python-multipart>=0.0.9
 alembic>=1.13
+anthropic>=0.40

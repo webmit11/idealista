@@ -355,7 +355,10 @@
     const url = idealistaUrl(r);
     const open = url ? `<a class="open-btn" href="#" onclick="tg.openLink('${url}');return false;">Открыть на Idealista →</a>` : '';
     let expert = '';
-    if (d.expert) {
+    if (d.expert_text) {
+      const safe = d.expert_text.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
+      expert = `<div class="panel"><h3>Экспертная оценка</h3><div style="font-size:14px; line-height:1.55;">${safe}</div></div>`;
+    } else if (d.expert) {
       const e = d.expert;
       const pros = (e.pros || []).map(x => `<div style="font-size:13px; padding:2px 0;"><span style="color:#8fe3ab;">✓</span> ${x}</div>`).join('');
       const cons = (e.cons || []).map(x => `<div style="font-size:13px; padding:2px 0;"><span style="color:#ffb4ac;">!</span> ${x}</div>`).join('');

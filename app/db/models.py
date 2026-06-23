@@ -22,6 +22,7 @@ class Property(SQLModel, table=True):
     url: Optional[str] = None
     title: Optional[str] = None
     description: Optional[str] = None
+    expert_text: Optional[str] = None  # cached LLM-written expert commentary
 
     price: Optional[float] = Field(default=None, index=True)
     previous_price: Optional[float] = None

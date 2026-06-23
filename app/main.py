@@ -32,6 +32,7 @@ from app.services.metro_stations import METRO_STATIONS
 from app.services.query import VALID_SORTS, count_properties, query_properties, serialize
 from app.services.explain import explain_score
 from app.services.expert_note import expert_note
+from app.services.expert_llm import generate_expert_text
 from app.services.investment import compute_investment
 from app.services.refresh_service import refresh_status, trigger_refresh
 from app.services.telegram_auth import require_owner, require_subscriber, require_telegram_user
@@ -241,10 +242,29 @@ def mini_app_property(
     ppm2 = data.get("price_per_m2")
     data["median_ppm2"] = med
     data["ppm2_diff_pct"] = round((ppm2 / med - 1) * 100, 1) if (ppm2 and med) else None
+    # LLM-written expert commentary, generated once and cached on the property.
+    if prop.expert_text is None and settings.anthropic_api_key:
+        risks = ", ".join(expl.get("risk_flags") or []) or "нет"
+        bonuses = ", ".join(expl.get("bonus_flags") or []) or "нет"
+        facts = (
+            f"Тип: {data.get('typology')}; цена: {data.get('price')} €; €/m²: {data.get('price_per_m2')}; "
+            f"медиана района €/m²: {med}; отклонение от медианы: {data.get('ppm2_diff_pct')}%; "
+            f"площадь: {data.get('area_m2')} m²; доходность: {data.get('gross_yield_percent')}%; "
+            f"метро: {data.get('nearest_metro_station')} ~{data.get('walking_minutes_to_metro_estimate')} мин пешком; "
+            f"состояние: {data.get('condition')}; лифт: {data.get('has_elevator')}; гараж: {data.get('has_garage')}; "
+            f"терраса: {data.get('has_terrace')}; район: {data.get('municipality')}/{data.get('parish')}; "
+            f"балл инвестпривлекательности: {data.get('total_score')}; флаги риска: {risks}; бонусы: {bonuses}."
+        )
+        txt = generate_expert_text(facts)
+        if txt:
+            prop.expert_text = txt
+            session.add(prop)
+            session.commit()
     return {
         "property": data,
         "explain": explain_score(data, score.explanation_json if score else None),
         "expert": expert_note(data, score.explanation_json if score else None),
+        "expert_text": prop.expert_text,
         "invest": compute_investment(prop.price, prop.rental_estimate_mid, prop.typology),
         "watch_statuses": [{"value": v, "label": l, "color": c} for v, l, c in WATCH_STATUSES],
     }
