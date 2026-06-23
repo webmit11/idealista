@@ -153,7 +153,7 @@
   let META = { municipalities: [], typologies: [], watch_statuses: [] };
   let ME = { active: false, owner: false };
   let wmap = {};
-  let state = { tab: 'top', filters: {}, sort: null, offset: 0, limit: 50, total: 0, items: [] };
+  let state = { tab: 'top', filters: {}, sort: null, offset: 0, limit: 50, total: 0, items: [], watchStatus: '' };
 
   function authHeaders() { return { 'X-Telegram-Init-Data': tg.initData }; }
   async function api(path) {
@@ -170,6 +170,8 @@
   }
 
   async function loadList(reset) {
+    if (state.tab === 'watch') return loadWatchlist(reset);
+    $('chips').innerHTML = '';
     if (reset) { state.offset = 0; state.items = []; }
     $('meta').textContent = 'Загрузка…';
     let data;
@@ -177,7 +179,7 @@
       data = await api('/app/api/properties?' + buildParams({ limit: state.limit, offset: state.offset }));
     } catch (e) {
       $('meta').textContent = '';
-      $('list').innerHTML = '<div class="empty">Доступ только для владельца приложения.</div>';
+      $('list').innerHTML = '<div class="empty">Доступ закрыт.</div>';
       $('more').style.display = 'none'; $('stats').innerHTML = ''; return;
     }
     state.total = data.total;
@@ -186,6 +188,28 @@
     renderStats(data.stats);
     renderList();
   }
+
+  async function loadWatchlist(reset) {
+    $('meta').textContent = 'Загрузка…'; $('stats').innerHTML = '';
+    let data;
+    try { data = await api('/app/api/watchlist' + (state.watchStatus ? '?status=' + state.watchStatus : '')); }
+    catch (e) { $('meta').textContent = ''; $('list').innerHTML = '<div class="empty">Ошибка.</div>'; $('more').style.display = 'none'; return; }
+    state.items = data.rows; state.total = data.total;
+    $('meta').textContent = state.total + ' в воронке';
+    renderWatchChips(data.counts, data.watch_statuses);
+    if (!state.items.length) $('list').innerHTML = '<div class="empty">Воронка пуста. Открой объект и нажми статус сделки.</div>';
+    else renderList();
+    $('more').style.display = 'none';
+  }
+
+  function renderWatchChips(counts, statuses) {
+    const total = Object.values(counts || {}).reduce((a, b) => a + b, 0);
+    let html = `<button class="chip ${!state.watchStatus ? 'on' : ''}" onclick="setWatchFilter('')">Все ${total}</button>`;
+    html += (statuses || []).filter(s => counts[s.value]).map(s =>
+      `<button class="chip ${state.watchStatus === s.value ? 'on' : ''}" onclick="setWatchFilter('${s.value}')">${s.label} ${counts[s.value]}</button>`).join('');
+    $('chips').innerHTML = html;
+  }
+  function setWatchFilter(v) { state.watchStatus = v; loadWatchlist(true); }
 
   function renderStats(stats) {
     if (!stats) { $('stats').innerHTML = ''; return; }
@@ -236,7 +260,10 @@
     catch (e) { $('detailBody').innerHTML = '<div class="empty">Ошибка.</div>'; return; }
     renderDetail(d);
   }
-  function closeDetail() { $('detail').classList.remove('open'); tg.BackButton.hide(); }
+  function closeDetail() {
+    $('detail').classList.remove('open'); tg.BackButton.hide();
+    if (state.tab === 'watch') loadWatchlist(true);  // reflect status edits
+  }
 
   function renderDetail(d) {
     const r = d.property, ex = d.explain, iv = d.invest;
@@ -287,15 +314,12 @@
 
     const cur = r.watch_status || '';
     state._cur = cur;
-    let watch = '';
-    if (ME.owner) {
-      const wbtns = d.watch_statuses.map(s =>
-        `<button class="wbtn ${s.value === cur ? 'on' : ''}" style="${s.value === cur ? 'background:' + s.color : ''}" onclick="setWatch(${r.id},'${s.value}')">${s.label}</button>`).join('');
-      watch = `<div class="panel"><h3>Воронка сделки</h3>
-        <div class="wbtns">${wbtns}<button class="wbtn ${!cur ? 'on' : ''}" onclick="setWatch(${r.id},'')">— нет —</button></div>
-        <div class="field" style="margin-top:10px;"><label>Заметка</label><input id="wnote" value="${(r.watch_note || '').replace(/"/g, '&quot;')}" placeholder="телефон агента, торг…"></div>
-        <button class="reset" onclick="saveNote(${r.id})">Сохранить заметку</button></div>`;
-    }
+    const wbtns = d.watch_statuses.map(s =>
+      `<button class="wbtn ${s.value === cur ? 'on' : ''}" style="${s.value === cur ? 'background:' + s.color : ''}" onclick="setWatch(${r.id},'${s.value}')">${s.label}</button>`).join('');
+    const watch = `<div class="panel"><h3>Моя воронка сделки</h3>
+      <div class="wbtns">${wbtns}<button class="wbtn ${!cur ? 'on' : ''}" onclick="setWatch(${r.id},'')">— нет —</button></div>
+      <div class="field" style="margin-top:10px;"><label>Заметка</label><input id="wnote" value="${(r.watch_note || '').replace(/"/g, '&quot;')}" placeholder="телефон агента, торг…"></div>
+      <button class="reset" onclick="saveNote(${r.id})">Сохранить заметку</button></div>`;
 
     const url = idealistaUrl(r);
     const open = url ? `<a class="open-btn" href="#" onclick="tg.openLink('${url}');return false;">Открыть на Idealista →</a>` : '';
@@ -339,7 +363,7 @@
     $('tabs').innerHTML = TABS.map(t => `<button class="tab ${t.id === 'top' ? 'active' : ''}" data-id="${t.id}">${t.label}</button>`).join('');
     document.querySelectorAll('.tab').forEach(b => b.onclick = () => {
       document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
-      b.classList.add('active'); state.tab = b.dataset.id; loadList(true);
+      b.classList.add('active'); state.tab = b.dataset.id; state.watchStatus = ''; loadList(true);
     });
     $('toggles').innerHTML = TOGGLES.map(([k, label]) =>
       `<label class="toggle"><input type="checkbox" id="t_${k}">${label}</label>`).join('');
@@ -390,9 +414,6 @@
 
   async function startApp() {
     $('paywall').classList.remove('open'); $('tabs').style.display = 'flex';
-    document.querySelectorAll('.tab').forEach(b => {
-      if (b.dataset.id === 'watch' && !ME.owner) b.style.display = 'none';
-    });
     $('trialBanner').innerHTML = ME.trial
       ? `<div style="margin:0 10px 6px; background:#16243a; color:#9cc2ff; border-radius:9px; padding:8px 11px; font-size:13px; display:flex; justify-content:space-between; align-items:center; gap:8px;">
            🎁 Пробный доступ${ME.until ? ' до ' + new Date(ME.until).toLocaleString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''}

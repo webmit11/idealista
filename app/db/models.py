@@ -152,6 +152,17 @@ class Score(SQLModel, table=True):
     property: Optional[Property] = Relationship(back_populates="score")
 
 
+class UserWatch(SQLModel, table=True):
+    """Per-user deal pipeline: one row per (telegram user, property)."""
+    __tablename__ = "user_watches"
+
+    telegram_id: int = Field(primary_key=True)
+    property_id: int = Field(foreign_key="properties.id", primary_key=True)
+    status: Optional[str] = None
+    note: Optional[str] = None
+    updated_at: datetime = Field(default_factory=utcnow)
+
+
 class Subscriber(SQLModel, table=True):
     """A Telegram user with paid access (Stars subscription)."""
     __tablename__ = "subscribers"

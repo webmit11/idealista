@@ -34,7 +34,7 @@ from app.services.explain import explain_score
 from app.services.investment import compute_investment
 from app.services.refresh_service import refresh_status, trigger_refresh
 from app.services.telegram_auth import require_owner, require_subscriber, require_telegram_user
-from app.services import subscriptions, telegram_api
+from app.services import subscriptions, telegram_api, user_watchlist
 from app.services.watchlist import WATCH_COLORS, WATCH_LABELS, WATCH_STATUSES, normalize_status
 
 logger = logging.getLogger("app")
@@ -192,9 +192,11 @@ def mini_app_properties(
         serialize(p, s)
         for p, s in query_properties(session, sort=sort_key, limit=limit, offset=offset, **filters)
     ]
-    if not subscriptions.is_owner(int(user["id"])):
-        for r in rows:
-            r["watch_status"] = r["watch_note"] = None
+    wmap = user_watchlist.get_map(session, int(user["id"]), [r["id"] for r in rows])
+    for r in rows:
+        w = wmap.get(r["id"])
+        r["watch_status"] = w.status if w else None
+        r["watch_note"] = w.note if w else None
     out: dict = {"rows": rows, "total": total}
     if with_stats:
         all_rows = [serialize(p, s) for p, s in query_properties(session, limit=3000, **filters)]
@@ -213,8 +215,9 @@ def mini_app_property(
         raise HTTPException(status_code=404, detail="Property not found")
     score = session.get(Score, property_id)
     data = serialize(prop, score)
-    if not subscriptions.is_owner(int(user["id"])):
-        data["watch_status"] = data["watch_note"] = None
+    w = user_watchlist.get_map(session, int(user["id"]), [prop.id]).get(prop.id)
+    data["watch_status"] = w.status if w else None
+    data["watch_note"] = w.note if w else None
     return {
         "property": data,
         "explain": explain_score(data, score.explanation_json if score else None),
@@ -229,17 +232,34 @@ def mini_app_set_watch(
     status: str = Query(""),
     note: str = Query(""),
     session: Session = Depends(get_session),
-    user: dict = Depends(require_owner),
+    user: dict = Depends(require_subscriber),
 ):
-    prop = session.get(Property, property_id)
-    if not prop:
+    if not session.get(Property, property_id):
         raise HTTPException(status_code=404, detail="Property not found")
-    prop.watch_status = normalize_status(status)
-    prop.watch_note = (note or "").strip() or None
-    prop.watch_updated_at = datetime.utcnow()
-    session.add(prop)
-    session.commit()
-    return {"ok": True, "watch_status": prop.watch_status, "watch_note": prop.watch_note}
+    w = user_watchlist.set_watch(session, int(user["id"]), property_id, status, note)
+    return {"ok": True, "watch_status": w.status if w else None, "watch_note": w.note if w else None}
+
+
+@app.get("/app/api/watchlist")
+def mini_app_watchlist(
+    session: Session = Depends(get_session),
+    user: dict = Depends(require_subscriber),
+    status: Optional[str] = Query(None),
+):
+    """The current user's own deal pipeline."""
+    uid = int(user["id"])
+    active = normalize_status(status) if status else None
+    rows = []
+    for prop, score, w in user_watchlist.list_watched(session, uid, active):
+        d = serialize(prop, score)
+        d["watch_status"], d["watch_note"] = w.status, w.note
+        rows.append(d)
+    return {
+        "rows": rows,
+        "total": len(rows),
+        "counts": user_watchlist.counts(session, uid),
+        "watch_statuses": [{"value": v, "label": l, "color": c} for v, l, c in WATCH_STATUSES],
+    }
 
 
 @app.get("/app/api/me")
