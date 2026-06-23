@@ -118,6 +118,10 @@
       <div class="toggles" id="toggles"></div>
       <button class="apply" id="filterApply">Применить</button>
       <button class="reset" id="filterReset">Сбросить</button>
+      <div style="margin-top:16px; border-top:1px solid rgba(255,255,255,.08); padding-top:14px;">
+        <button class="apply" id="filterSave" style="background:#1d3a2a; color:#9fe3b8;">🔔 Сохранить как подписку</button>
+        <div id="savedList" style="margin-top:10px;"></div>
+      </div>
     </div>
   </div>
 
@@ -428,6 +432,66 @@
     state.filters = {}; state.sort = null;
   }
 
+  // ---- saved searches (subscriptions) ----
+  async function apiSend(path, method, body) {
+    const r = await fetch(path, {
+      method,
+      headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders()),
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    return r.json().catch(() => ({}));
+  }
+  async function saveCurrentFilter() {
+    readFilters();
+    const res = await apiSend('/app/api/filters', 'POST', { criteria: state.filters });
+    if (res && res.id) {
+      tg.HapticFeedback && tg.HapticFeedback.notificationOccurred('success');
+      loadSavedFilters();
+    } else {
+      const msg = (res && res.detail) || 'Не удалось сохранить';
+      tg.showPopup ? tg.showPopup({ message: msg }) : alert(msg);
+    }
+  }
+  async function loadSavedFilters() {
+    const el = $('savedList'); if (!el) return;
+    let data; try { data = await api('/app/api/filters'); } catch (e) { return; }
+    const rows = (data && data.rows) || [];
+    if (!rows.length) {
+      el.innerHTML = '<div style="color:#8b93a7; font-size:13px; line-height:1.5;">Нет подписок. Настрой фильтр и нажми «Сохранить как подписку» — будем присылать новые подходящие объекты в Telegram.</div>';
+      return;
+    }
+    el.innerHTML = '<div style="font-size:13px; color:#8b93a7; margin-bottom:6px;">Мои подписки (' + rows.length + '/' + (data.max || 10) + '):</div>' +
+      rows.map(s => `
+        <div style="display:flex; align-items:center; gap:8px; background:rgba(255,255,255,.05); border-radius:10px; padding:8px 10px; margin-bottom:6px;">
+          <span onclick='applySavedFilter(${JSON.stringify(s.criteria)})' style="flex:1; font-size:13px; ${s.active ? '' : 'opacity:.5;'} cursor:pointer;">${s.active ? '🔔' : '🔕'} ${(s.name || 'поиск').replace(/</g, '&lt;')}</span>
+          <button class="ghost" style="padding:4px 9px; font-size:12px;" onclick="toggleSavedFilter(${s.id}, ${s.active ? 'false' : 'true'})">${s.active ? 'выкл' : 'вкл'}</button>
+          <button class="ghost" style="padding:4px 9px; font-size:12px;" onclick="deleteSavedFilter(${s.id})">🗑</button>
+        </div>`).join('');
+  }
+  async function deleteSavedFilter(id) { await apiSend('/app/api/filters/' + id, 'DELETE'); loadSavedFilters(); }
+  async function toggleSavedFilter(id, active) { await apiSend('/app/api/filters/' + id + '/toggle?active=' + active, 'POST'); loadSavedFilters(); }
+  function applySavedFilter(c) {
+    c = c || {};
+    resetFilters();
+    if (c.min_score != null) $('f_min_score').value = c.min_score;
+    if (c.max_price != null) $('f_max_price').value = c.max_price;
+    if (c.typology) $('f_typology').value = c.typology;
+    if (c.municipality) $('f_municipality').value = c.municipality;
+    if (c.max_distance_to_metro != null) $('f_max_dist').value = c.max_distance_to_metro;
+    if (c.min_gross_yield != null) $('f_min_yield').value = c.min_gross_yield;
+    TOGGLES.forEach(([k]) => { if (c[k]) $('t_' + k).checked = true; });
+    readFilters();
+    $('filterSheet').classList.remove('open');
+    loadList(true);
+  }
+  function pendingDetailId() {
+    const q = new URLSearchParams(location.search).get('p');
+    if (q && /^\d+$/.test(q)) return parseInt(q);
+    const sp = (tg.initDataUnsafe && tg.initDataUnsafe.start_param) || '';
+    const m = sp.match(/^p(\d+)$/);
+    return m ? parseInt(m[1]) : null;
+  }
+
   function buildUI() {
     $('tabs').innerHTML = TABS.map(t => `<button class="cat ${t.id === 'top' ? 'active' : ''}" data-id="${t.id}" style="background-image:url(/static/icons/${t.icon}.png)"><span>${t.label}</span></button>`).join('');
     document.querySelectorAll('.cat').forEach(b => b.onclick = () => {
@@ -436,7 +500,8 @@
     });
     $('toggles').innerHTML = TOGGLES.map(([k, label]) =>
       `<label class="toggle"><input type="checkbox" id="t_${k}">${label}</label>`).join('');
-    $('filterBtn').onclick = () => $('filterSheet').classList.add('open');
+    $('filterBtn').onclick = () => { $('filterSheet').classList.add('open'); loadSavedFilters(); };
+    $('filterSave').onclick = saveCurrentFilter;
     $('filterClose').onclick = () => $('filterSheet').classList.remove('open');
     $('filterApply').onclick = () => { readFilters(); $('filterSheet').classList.remove('open'); loadList(true); };
     $('filterReset').onclick = () => { resetFilters(); $('filterSheet').classList.remove('open'); loadList(true); };
@@ -495,6 +560,8 @@
       $('f_municipality').innerHTML = '<option value="">Любой</option>' + META.municipalities.map(m => `<option>${m}</option>`).join('');
     } catch (e) {}
     loadList(true);
+    const pid = pendingDetailId();
+    if (pid) setTimeout(() => openDetail(pid), 350);
   }
 
   async function init() {

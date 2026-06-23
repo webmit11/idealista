@@ -176,6 +176,17 @@ def _maybe_send_alerts(session: Session, created_ids: list[int], dropped_ids: li
         return 0
 
 
+def _notify_saved_filters(session: Session, created_ids: list[int], dropped_ids: list[int]) -> int:
+    """Per-user push: alert subscribers about new listings matching their saved searches."""
+    try:
+        from app.services.saved_filters import notify_new  # lazy import
+
+        return notify_new(session, created_ids, dropped_ids)
+    except Exception:
+        logger.exception("saved-filter notifications failed")
+        return 0
+
+
 def recalculate_scores(session: Session) -> int:
     benchmarks = compute_benchmarks(session)
     props = session.exec(select(Property).where(Property.is_active == True)).all()  # noqa: E712
@@ -299,6 +310,7 @@ def run_areas_refresh(
     generate_missing_expert(session)
     scored = recalculate_scores(session)
     alerted = _maybe_send_alerts(session, created_ids, dropped_ids)
+    _notify_saved_filters(session, created_ids, dropped_ids)
     stats = {
         "provider": provider.name,
         "areas": len(areas),
@@ -350,6 +362,7 @@ def run_import(
     generate_missing_expert(session)
     scored = recalculate_scores(session)
     alerted = _maybe_send_alerts(session, created_ids, dropped_ids)
+    _notify_saved_filters(session, created_ids, dropped_ids)
     stats = {
         "provider": provider.name,
         "fetched": len(listings),

@@ -37,7 +37,7 @@ from app.services.investment import compute_investment
 from app.services.scoring import compute_score
 from app.services.refresh_service import refresh_status, trigger_refresh
 from app.services.telegram_auth import require_owner, require_subscriber, require_telegram_user
-from app.services import subscriptions, telegram_api, user_watchlist
+from app.services import saved_filters, subscriptions, telegram_api, user_watchlist
 from app.services.watchlist import WATCH_COLORS, WATCH_LABELS, WATCH_STATUSES, normalize_status
 
 logger = logging.getLogger("app")
@@ -314,6 +314,53 @@ def mini_app_watchlist(
         "counts": user_watchlist.counts(session, uid),
         "watch_statuses": [{"value": v, "label": l, "color": c} for v, l, c in WATCH_STATUSES],
     }
+
+
+@app.get("/app/api/filters")
+def mini_app_filters_list(
+    session: Session = Depends(get_session),
+    user: dict = Depends(require_subscriber),
+):
+    rows = saved_filters.list_for(session, int(user["id"]))
+    return {
+        "rows": [
+            {"id": s.id, "name": s.name, "criteria": s.criteria_json, "active": s.active}
+            for s in rows
+        ],
+        "max": saved_filters.MAX_PER_USER,
+    }
+
+
+@app.post("/app/api/filters")
+async def mini_app_filters_create(
+    request: Request,
+    session: Session = Depends(get_session),
+    user: dict = Depends(require_subscriber),
+):
+    body = await request.json()
+    sf = saved_filters.create(session, int(user["id"]), body.get("name"), body.get("criteria") or {})
+    if not sf:
+        raise HTTPException(status_code=400, detail="Достигнут лимит сохранённых поисков")
+    return {"id": sf.id, "name": sf.name, "criteria": sf.criteria_json, "active": sf.active}
+
+
+@app.delete("/app/api/filters/{filter_id}")
+def mini_app_filters_delete(
+    filter_id: int,
+    session: Session = Depends(get_session),
+    user: dict = Depends(require_subscriber),
+):
+    return {"ok": saved_filters.delete(session, int(user["id"]), filter_id)}
+
+
+@app.post("/app/api/filters/{filter_id}/toggle")
+def mini_app_filters_toggle(
+    filter_id: int,
+    active: bool = Query(True),
+    session: Session = Depends(get_session),
+    user: dict = Depends(require_subscriber),
+):
+    return {"ok": saved_filters.set_active(session, int(user["id"]), filter_id, active)}
 
 
 @app.get("/app/api/me")

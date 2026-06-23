@@ -177,3 +177,16 @@ class Subscriber(SQLModel, table=True):
     last_charge_id: Optional[str] = None
     created_at: datetime = Field(default_factory=utcnow)
     updated_at: datetime = Field(default_factory=utcnow)
+
+
+class SavedFilter(SQLModel, table=True):
+    """A subscriber's saved search; new listings matching it trigger a Telegram alert."""
+    __tablename__ = "saved_filters"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    telegram_id: int = Field(index=True)
+    name: Optional[str] = None
+    criteria_json: dict = Field(default_factory=dict, sa_type=JSON)
+    active: bool = True
+    created_at: datetime = Field(default_factory=utcnow)
+    last_notified_at: Optional[datetime] = None
