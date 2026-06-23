@@ -90,7 +90,7 @@ class Settings(BaseSettings):
     telegram_owner_id: Optional[int] = None
     # --- Telegram Stars subscriptions ---
     trial_days: int = 1                          # free trial on first open (0 disables)
-    subscription_price_stars: int = 250          # Stars charged per period
+    subscription_price_stars: int = 500          # Stars/period (~$10 in-app to the buyer)
     subscription_period_days: int = 30           # Telegram supports 30-day periods
     subscription_title: str = "Porto Investment Finder — доступ"
     subscription_description: str = "Доступ к аналитике объектов у метро Порту на 30 дней."
