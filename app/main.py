@@ -33,7 +33,7 @@ from app.services.query import VALID_SORTS, count_properties, query_properties, 
 from app.services.explain import explain_score
 from app.services.expert_note import expert_note
 from app.services.al_license import detect_al_license
-from app.services.expert_llm import expert_facts, generate_expert
+from app.services.expert_llm import expert_facts, expert_worth_generating, generate_expert
 from app.services.investment import compute_investment
 from app.services.scoring import compute_score
 from app.services.refresh_service import refresh_status, trigger_refresh
@@ -240,7 +240,8 @@ def _enrich_with_expert(session: Session, prop: Property, score: Optional[Score]
     ppm2 = data.get("price_per_m2")
     data["median_ppm2"] = med
     data["ppm2_diff_pct"] = round((ppm2 / med - 1) * 100, 1) if (ppm2 and med) else None
-    if prop.expert_text is None and settings.anthropic_api_key:
+    if (prop.expert_text is None and settings.anthropic_api_key
+            and expert_worth_generating(prop, data.get("total_score"))):
         txt, delta = generate_expert(expert_facts(prop, expl), data.get("image_urls"))
         if txt:
             prop.expert_text = txt

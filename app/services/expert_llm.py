@@ -37,6 +37,17 @@ class _Rating(BaseModel):
     score_delta: int
 
 
+def expert_worth_generating(prop, score_total) -> bool:
+    """Skip LLM generation for listings that are BOTH far from metro and low-score
+    (the free rule-based note covers them). AL listings are always worth it."""
+    if getattr(prop, "has_al_license", False):
+        return True
+    dist = getattr(prop, "distance_to_metro_m", None)
+    far = dist is not None and dist > settings.expert_skip_distance_m
+    low = (score_total or 0) < settings.expert_skip_below_score
+    return not (far and low)
+
+
 def expert_facts(prop, explanation) -> str:
     """Build the compact facts string fed to the model alongside the photos."""
     expl = explanation or {}

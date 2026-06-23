@@ -118,6 +118,10 @@ class Settings(BaseSettings):
     expert_vision_images: int = 5  # how many listing photos to send to the model (0 = text only)
     expert_per_refresh: int = 40   # max expert generations per daily refresh (covers new listings)
     expert_min_score: int = 60     # only generate expert for listings scoring at least this
+    # Skip LLM expert text for listings that are BOTH far from metro and low-score
+    # (saves tokens; the free rule-based note is shown instead). AL listings exempt.
+    expert_skip_distance_m: int = 2000
+    expert_skip_below_score: float = 60
     # Public HTTPS base used to register the webhook, e.g. https://aicraftpin.com
     public_base_url: Optional[str] = None
     # Email / SMTP

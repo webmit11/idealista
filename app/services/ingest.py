@@ -241,7 +241,7 @@ def generate_missing_expert(session: Session) -> int:
     still lack it (covers new listings and gradually backfills). Capped per run."""
     if not settings.anthropic_api_key or settings.expert_per_refresh <= 0:
         return 0
-    from app.services.expert_llm import expert_facts, generate_expert
+    from app.services.expert_llm import expert_facts, expert_worth_generating, generate_expert
 
     rows = session.exec(
         select(Property, Score)
@@ -257,6 +257,8 @@ def generate_missing_expert(session: Session) -> int:
     ).all()
     n = 0
     for prop, sc in rows:
+        if not expert_worth_generating(prop, sc.total_score):
+            continue
         txt, delta = generate_expert(expert_facts(prop, sc.explanation_json or {}), prop.image_urls)
         if txt:
             prop.expert_text = txt
