@@ -227,27 +227,18 @@ def mini_app_properties(
     return out
 
 
-@app.get("/app/api/property/{property_id}")
-def mini_app_property(
-    property_id: int,
-    session: Session = Depends(get_session),
-    user: dict = Depends(require_subscriber),
-):
-    prop = session.get(Property, property_id)
-    if not prop:
-        raise HTTPException(status_code=404, detail="Property not found")
-    score = session.get(Score, property_id)
-    data = serialize(prop, score)
-    w = user_watchlist.get_map(session, int(user["id"]), [prop.id]).get(prop.id)
-    data["watch_status"] = w.status if w else None
-    data["watch_note"] = w.note if w else None
-    # Area median €/m² and this listing's deviation from it (negative = below market).
+def _enrich_with_expert(session: Session, prop: Property, score: Optional[Score], data: dict) -> None:
+    """Median €/m² deviation + cached LLM expert commentary (generated once).
+
+    Shared by the Mini App JSON detail and the web HTML detail so the two stay in
+    sync. Mutates `data` (median_ppm2 / ppm2_diff_pct / refreshed total_score) and,
+    on first view, sets prop.expert_text / prop.expert_delta and re-scores.
+    """
     expl = (score.explanation_json or {}) if score else {}
     med = expl.get("median_price_per_m2_benchmark")
     ppm2 = data.get("price_per_m2")
     data["median_ppm2"] = med
     data["ppm2_diff_pct"] = round((ppm2 / med - 1) * 100, 1) if (ppm2 and med) else None
-    # LLM-written expert commentary, generated once and cached on the property.
     if prop.expert_text is None and settings.anthropic_api_key:
         risks = ", ".join(expl.get("risk_flags") or []) or "нет"
         bonuses = ", ".join(expl.get("bonus_flags") or []) or "нет"
@@ -273,6 +264,23 @@ def mini_app_property(
                 session.add(score)
                 data["total_score"] = result.total_score
             session.commit()
+
+
+@app.get("/app/api/property/{property_id}")
+def mini_app_property(
+    property_id: int,
+    session: Session = Depends(get_session),
+    user: dict = Depends(require_subscriber),
+):
+    prop = session.get(Property, property_id)
+    if not prop:
+        raise HTTPException(status_code=404, detail="Property not found")
+    score = session.get(Score, property_id)
+    data = serialize(prop, score)
+    w = user_watchlist.get_map(session, int(user["id"]), [prop.id]).get(prop.id)
+    data["watch_status"] = w.status if w else None
+    data["watch_note"] = w.note if w else None
+    _enrich_with_expert(session, prop, score, data)
     return {
         "property": data,
         "explain": explain_score(data, score.explanation_json if score else None),
@@ -507,6 +515,7 @@ def dashboard(
     has_elevator: bool = Query(False),
     has_terrace: bool = Query(False),
     has_al_license: bool = Query(False),
+    expert_positive: bool = Query(False),
     south_facing: bool = Query(False),
     exclude_ground_floor: bool = Query(False),
     exclude_no_coordinates: bool = Query(False),
@@ -538,6 +547,7 @@ def dashboard(
         has_elevator=True if has_elevator else None,
         has_terrace=True if has_terrace else None,
         has_al_license=True if has_al_license else None,
+        expert_positive=expert_positive,
         south_facing=south_facing,
         exclude_ground_floor=exclude_ground_floor,
         exclude_no_coordinates=exclude_no_coordinates,
@@ -583,6 +593,8 @@ def dashboard(
         ("exclude_no_coordinates", exclude_no_coordinates),
         ("exclude_bad_neighborhoods", exclude_bad_neighborhoods),
         ("only_exact_location", only_exact_location),
+        ("has_al_license", has_al_license),
+        ("expert_positive", expert_positive),
     ):
         if val:
             qs_params[key] = "true"
@@ -606,6 +618,8 @@ def dashboard(
         "exclude_no_coordinates": exclude_no_coordinates,
         "exclude_bad_neighborhoods": exclude_bad_neighborhoods,
         "only_exact_location": only_exact_location,
+        "has_al_license": has_al_license,
+        "expert_positive": expert_positive,
         "sort": sort_key,
         "limit": per_page,
     }
@@ -863,6 +877,7 @@ def property_detail(
     ).all()
     data = serialize(prop, score)
     _overlay_owner_watch(session, [data])
+    _enrich_with_expert(session, prop, score, data)
 
     ltv_f, rate_f, term_i = _opt_float(ltv), _opt_float(rate), _opt_int(term, 0)
     invest = compute_investment(
@@ -880,6 +895,9 @@ def property_detail(
             "explain": explain_score(data, score.explanation_json if score else None),
             "invest": invest,
             "history": [{"price": h.price, "observed_at": h.observed_at} for h in history],
+            "expert_text": prop.expert_text,
+            "expert_delta": prop.expert_delta,
+            "expert": expert_note(data, score.explanation_json if score else None),
             "app_name": settings.app_name,
             "watch_statuses": WATCH_STATUSES,
             "watch_labels": WATCH_LABELS,

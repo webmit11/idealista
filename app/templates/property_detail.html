@@ -36,7 +36,8 @@
   <div class="kv">
     <div>Price</div><div>{{ '{:,.0f}'.format(p.price).replace(',', ' ') if p.price else '—' }} €
       {% if p.price_drop_percent %}<span class="drop">(-{{ '%.1f'|format(p.price_drop_percent) }}%, was {{ '%.0f'|format(p.previous_price) }} €)</span>{% endif %}</div>
-    <div>€/m²</div><div>{{ '%.0f'|format(p.price_per_m2) if p.price_per_m2 else '—' }}</div>
+    <div>€/m²</div><div>{{ '%.0f'|format(p.price_per_m2) if p.price_per_m2 else '—' }}{% if p.median_ppm2 %} · медиана района {{ '%.0f'|format(p.median_ppm2) }}{% if p.ppm2_diff_pct is not none %} <span class="flag" style="background:{{ '#16321f' if p.ppm2_diff_pct < 0 else '#3a2326' }}; color:{{ '#8fe3ab' if p.ppm2_diff_pct < 0 else '#ffb4ac' }};">{{ '%+.1f'|format(p.ppm2_diff_pct) }}% к медиане</span>{% endif %}{% endif %}</div>
+    {% if p.has_al_license %}<div>AL-лицензия</div><div><span class="flag" style="background:#2a1f47; color:#cbb4ff;">🏷 заявлена в объявлении (краткосрочная аренда)</span></div>{% endif %}
     <div>Typology / Area</div><div>{{ p.typology or '—' }} · {{ '%.0f'|format(p.area_m2) if p.area_m2 else '—' }} m² · {{ p.rooms or '?' }} rooms · {{ p.bathrooms or '?' }} baths</div>
     <div>Floor / Condition</div><div>{{ p.floor if p.floor is not none else '—' }} · {{ p.condition or 'unknown' }} · energy {{ p.energy_certificate or '—' }}</div>
     <div>Elevator / Garage</div><div>{{ 'Yes' if p.has_elevator else 'No' }} / {{ 'Yes' if p.has_garage else 'No' }} · balcony {{ 'Yes' if p.has_balcony else 'No' }} · terrace {{ 'Yes' if p.has_terrace else 'No' }}</div>
@@ -50,6 +51,41 @@
     <div>URL</div><div>{% if p.url %}<a href="{{ p.url }}" target="_blank" rel="noopener">{{ p.url }}</a>{% else %}—{% endif %}</div>
   </div>
 </div>
+
+{% if expert_text or expert %}
+<div class="panel" style="margin-bottom:16px;">
+  <h3 style="margin-top:0;">Экспертная оценка
+    {% if expert_delta %}<span class="newbadge" style="background:{{ '#16321f' if expert_delta > 0 else '#3a2326' }}; color:{{ '#8fe3ab' if expert_delta > 0 else '#ffb4ac' }}; border:none;">{{ '%+d'|format(expert_delta) }} к баллу</span>{% endif %}
+  </h3>
+  {% if expert_text %}
+    <div style="line-height:1.6; white-space:pre-wrap;">{{ expert_text }}</div>
+  {% else %}
+    <div style="margin-bottom:6px;"><b>{{ expert.verdict }}</b></div>
+    {% if expert.pros %}<div style="margin-bottom:4px;">✅ {{ expert.pros | join(' · ') }}</div>{% endif %}
+    {% if expert.cons %}<div style="margin-bottom:4px;">⚠️ {{ expert.cons | join(' · ') }}</div>{% endif %}
+    <div style="color:var(--muted);">{{ expert.audience }}</div>
+  {% endif %}
+</div>
+{% endif %}
+
+{% if p.latitude and p.longitude %}
+<div class="panel" style="margin-bottom:16px;">
+  <h3 style="margin-top:0;">Расположение{% if not p.exact_location %} <span class="flag">приблизительно — точный адрес скрыт</span>{% endif %}</h3>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <div id="pmap" style="height:300px; border-radius:10px; overflow:hidden; background:#1a1d24;"></div>
+  <script>
+    (function () {
+      var lat = {{ p.latitude }}, lng = {{ p.longitude }}, exact = {{ 'true' if p.exact_location else 'false' }};
+      var m = L.map('pmap').setView([lat, lng], exact ? 16 : 14);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(m);
+      if (exact) { L.marker([lat, lng]).addTo(m); }
+      else { L.circle([lat, lng], { radius: 350, color: '#4f8cff', fillColor: '#4f8cff', fillOpacity: 0.15 }).addTo(m); }
+      setTimeout(function () { m.invalidateSize(); }, 200);
+    })();
+  </script>
+</div>
+{% endif %}
 
 {% if explain %}
 <div class="panel" style="margin-bottom:16px;">

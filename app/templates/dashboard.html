@@ -85,6 +85,8 @@
     <label><input type="checkbox" name="exclude_no_coordinates" value="true" {{ 'checked' if filters.exclude_no_coordinates }}> Exclude no coordinates</label>
     <label><input type="checkbox" name="exclude_bad_neighborhoods" value="true" {{ 'checked' if filters.exclude_bad_neighborhoods }}> Exclude bad neighbourhoods</label>
     <label><input type="checkbox" name="only_exact_location" value="true" {{ 'checked' if filters.only_exact_location }}> Only exact location</label>
+    <label><input type="checkbox" name="has_al_license" value="true" {{ 'checked' if filters.has_al_license }}> 🏷 AL licence</label>
+    <label><input type="checkbox" name="expert_positive" value="true" {{ 'checked' if filters.expert_positive }}> 👍 Expert rated +</label>
   </div>
 
   {# preserve current column sort when re-applying filters; page resets to 1 #}
@@ -125,7 +127,7 @@
     <tr>
       <td>{% if r.thumbnail_url %}<a href="/property/{{ r.id }}"><img class="thumb" loading="lazy" src="{{ r.thumbnail_url }}" alt=""></a>{% else %}<div class="thumb-empty"></div>{% endif %}</td>
       <td><span class="score" style="background: {{ score_color(r.total_score) }}">{{ '%.0f'|format(r.total_score) if r.total_score is not none else '—' }}</span></td>
-      <td><a href="/property/{{ r.id }}">{{ (r.title or 'Listing %s'|format(r.id))|truncate(42) }}</a>{% if r.is_new %}<span class="newbadge">NEW</span>{% endif %}{% if r.watch_status %}<span class="newbadge" style="background:{{ watch_colors.get(r.watch_status, '#444') }}; color:#0b0d10; border:none;">{{ watch_labels.get(r.watch_status, r.watch_status) }}</span>{% endif %}</td>
+      <td><a href="/property/{{ r.id }}">{{ (r.title or 'Listing %s'|format(r.id))|truncate(42) }}</a>{% if r.is_new %}<span class="newbadge">NEW</span>{% endif %}{% if r.has_al_license %}<span class="newbadge" style="background:#2a1f47; color:#cbb4ff; border:none;">🏷 AL</span>{% endif %}{% if r.watch_status %}<span class="newbadge" style="background:{{ watch_colors.get(r.watch_status, '#444') }}; color:#0b0d10; border:none;">{{ watch_labels.get(r.watch_status, r.watch_status) }}</span>{% endif %}</td>
       <td class="num">{{ '{:,.0f}'.format(r.price).replace(',', ' ') if r.price else '—' }} €</td>
       <td class="num">{{ '%.0f'|format(r.price_per_m2) if r.price_per_m2 else '—' }}</td>
       <td>{{ r.typology or '—' }}</td>
