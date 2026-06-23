@@ -19,10 +19,13 @@
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     body { margin: 0; background: var(--bg); color: var(--text);
            font: 15px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    .tabs { display: flex; gap: 6px; padding: 8px; overflow-x: auto; position: sticky; top: 0; background: var(--bg); z-index: 5; }
-    .tab { white-space: nowrap; padding: 8px 12px; border: none; border-radius: 9px; background: var(--sec);
-           color: var(--text); font-size: 13px; }
-    .tab.active { background: var(--btn); color: var(--btn-text); }
+    .tabs { display: flex; gap: 9px; padding: 10px; overflow-x: auto; position: sticky; top: 0; background: var(--bg); z-index: 5; scrollbar-width: none; }
+    .tabs::-webkit-scrollbar { display: none; }
+    .cat { position: relative; flex: 0 0 auto; width: 82px; height: 82px; border: none; padding: 0;
+           border-radius: 16px; background: #15171c center/cover no-repeat; overflow: hidden; cursor: pointer; }
+    .cat span { position: absolute; left: 0; right: 0; bottom: 0; padding: 12px 7px 7px; font-size: 11px;
+                font-weight: 600; color: #fff; text-align: left; background: linear-gradient(transparent, rgba(0,0,0,.78)); }
+    .cat.active { outline: 2px solid var(--btn); outline-offset: -2px; box-shadow: 0 0 0 4px rgba(79,140,255,.18); }
     .bar { display: flex; align-items: center; justify-content: space-between; padding: 0 12px 6px; }
     .meta { color: var(--hint); font-size: 12px; }
     .ghost { background: var(--sec); color: var(--text); border: none; border-radius: 8px; padding: 7px 11px; font-size: 13px; }
@@ -138,11 +141,11 @@
   const scoreColor = s => s == null ? '#444' : s >= 70 ? '#2fbf71' : s >= 55 ? '#9acd32' : s >= 40 ? '#f5a623' : '#e5534b';
 
   const TABS = [
-    { id: 'top',  label: '🔥 Топ',        base: { sort: 'score_desc', min_score: 60 } },
-    { id: 'new',  label: '🆕 Новинки',    base: { only_new: 'true', sort: 'newest' } },
-    { id: 'drop', label: '🔻 Снижения',   base: { only_price_drops: 'true', sort: 'biggest_drop' } },
-    { id: 'dev',  label: '🏗 Новостройки', base: { only_developments: 'true', with_stats: '1', sort: 'score_desc' } },
-    { id: 'watch', label: '⭐ Воронка',   base: { watched_only: 'true', sort: 'watch_desc' } },
+    { id: 'top',  label: 'Топ',         icon: 'top',   base: { sort: 'score_desc', min_score: 60 } },
+    { id: 'new',  label: 'Новинки',     icon: 'new',   base: { only_new: 'true', sort: 'newest' } },
+    { id: 'drop', label: 'Снижения',    icon: 'drop',  base: { only_price_drops: 'true', sort: 'biggest_drop' } },
+    { id: 'dev',  label: 'Новостройки', icon: 'dev',   base: { only_developments: 'true', with_stats: '1', sort: 'score_desc' } },
+    { id: 'watch', label: 'Воронка',    icon: 'watch', base: { watched_only: 'true', sort: 'watch_desc' } },
   ];
   const TOGGLES = [
     ['only_new', 'Новинки'], ['only_price_drops', 'Снижения'], ['has_terrace', 'Терраса'],
@@ -360,9 +363,9 @@
   }
 
   function buildUI() {
-    $('tabs').innerHTML = TABS.map(t => `<button class="tab ${t.id === 'top' ? 'active' : ''}" data-id="${t.id}">${t.label}</button>`).join('');
-    document.querySelectorAll('.tab').forEach(b => b.onclick = () => {
-      document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+    $('tabs').innerHTML = TABS.map(t => `<button class="cat ${t.id === 'top' ? 'active' : ''}" data-id="${t.id}" style="background-image:url(/static/icons/${t.icon}.png)"><span>${t.label}</span></button>`).join('');
+    document.querySelectorAll('.cat').forEach(b => b.onclick = () => {
+      document.querySelectorAll('.cat').forEach(x => x.classList.remove('active'));
       b.classList.add('active'); state.tab = b.dataset.id; state.watchStatus = ''; loadList(true);
     });
     $('toggles').innerHTML = TOGGLES.map(([k, label]) =>

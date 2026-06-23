@@ -13,6 +13,7 @@ from urllib.parse import urlencode
 
 from fastapi import Depends, FastAPI, Form, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse, RedirectResponse, Response
+from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlmodel import Session, select
 
@@ -88,6 +89,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title=settings.app_name, lifespan=lifespan)
+app.mount("/static", StaticFiles(directory="app/static"), name="static")
 app.include_router(routes_properties.router)
 app.include_router(routes_searches.router)
 app.include_router(routes_exports.router)
@@ -101,7 +103,8 @@ async def basic_auth(request: Request, call_next):
     path = request.url.path
     # /app* (initData), /bot* and /tribute* (payment webhooks), /health are open.
     if (password and path != "/health" and not path.startswith("/app")
-            and not path.startswith("/bot") and not path.startswith("/tribute")):
+            and not path.startswith("/bot") and not path.startswith("/tribute")
+            and not path.startswith("/static")):
         header = request.headers.get("authorization", "")
         ok = False
         if header.startswith("Basic "):
