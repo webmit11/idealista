@@ -359,24 +359,33 @@
   }
 
   async function subscribe() {
+    if (ME.subscribe_url) {  // Tribute (cards / Wallet Pay)
+      if (ME.subscribe_url.indexOf('https://t.me') === 0) tg.openTelegramLink(ME.subscribe_url);
+      else tg.openLink(ME.subscribe_url);
+      pollAccess();
+      return;
+    }
+    // fallback: Telegram Stars invoice
     $('paywallStatus').textContent = 'Создаю счёт…';
     let r;
     try { r = await fetch('/app/api/subscribe', { method: 'POST', headers: authHeaders() }); }
     catch (e) { $('paywallStatus').textContent = 'Ошибка сети'; return; }
     const d = await r.json();
     if (!d.link) { $('paywallStatus').textContent = 'Оплата сейчас недоступна'; return; }
-    tg.openInvoice(d.link, async (status) => {
-      if (status === 'paid') {
-        $('paywallStatus').textContent = 'Проверяю оплату…';
-        for (let i = 0; i < 6; i++) {
-          await new Promise(res => setTimeout(res, 1500));
-          try { ME = await api('/app/api/me'); } catch (e) {}
-          if (ME.active) { startApp(); return; }
-        }
-        $('paywallStatus').textContent = 'Оплата получена — перезапусти приложение.';
-      } else if (status === 'failed') { $('paywallStatus').textContent = 'Оплата не прошла.'; }
-      else { $('paywallStatus').textContent = ''; }
+    tg.openInvoice(d.link, (status) => {
+      if (status === 'paid') pollAccess();
+      else if (status === 'failed') $('paywallStatus').textContent = 'Оплата не прошла.';
     });
+  }
+
+  async function pollAccess() {
+    $('paywallStatus').textContent = 'После оплаты вернись — доступ откроется автоматически…';
+    for (let i = 0; i < 12; i++) {
+      await new Promise(res => setTimeout(res, 2500));
+      try { ME = await api('/app/api/me'); } catch (e) {}
+      if (ME.active && !ME.trial) { startApp(); return; }
+    }
+    $('paywallStatus').textContent = 'Если оплата прошла — перезапусти приложение.';
   }
 
   async function startApp() {

@@ -1,10 +1,13 @@
 """FastAPI application: JSON API + HTML dashboard."""
 import base64
+import hashlib
+import hmac
+import json
 import logging
 import secrets
 from collections import Counter
 from contextlib import asynccontextmanager
-from datetime import datetime
+from datetime import datetime, timezone
 from math import ceil
 from typing import Optional
 from urllib.parse import urlencode
@@ -83,8 +86,9 @@ async def basic_auth(request: Request, call_next):
     """HTTP Basic auth for everything except /health (when a password is set)."""
     password = settings.dashboard_password
     path = request.url.path
-    # /app* uses Telegram initData auth; /bot* is the Telegram webhook; /health is open.
-    if password and path != "/health" and not path.startswith("/app") and not path.startswith("/bot"):
+    # /app* (initData), /bot* and /tribute* (payment webhooks), /health are open.
+    if (password and path != "/health" and not path.startswith("/app")
+            and not path.startswith("/bot") and not path.startswith("/tribute")):
         header = request.headers.get("authorization", "")
         ok = False
         if header.startswith("Basic "):
@@ -247,6 +251,7 @@ def mini_app_me(
     st = subscriptions.status(session, int(user["id"]))
     st["price_stars"] = settings.subscription_price_stars
     st["period_days"] = settings.subscription_period_days
+    st["subscribe_url"] = settings.tribute_subscription_url  # Tribute link; null -> use Stars
     return st
 
 
@@ -300,6 +305,51 @@ async def telegram_webhook(secret: str, request: Request):
             int((msg.get("from") or {}).get("id", 0)),
             "Открой приложение через кнопку меню, оформи подписку и пользуйся аналитикой.",
         )
+    return {"ok": True}
+
+
+def _parse_iso(value: Optional[str]) -> Optional[datetime]:
+    """Parse an ISO-8601 timestamp to naive UTC (DB stores naive UTC)."""
+    if not value:
+        return None
+    try:
+        dt = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except (ValueError, AttributeError):
+        return None
+    return dt.astimezone(timezone.utc).replace(tzinfo=None) if dt.tzinfo else dt
+
+
+@app.post("/tribute/webhook")
+async def tribute_webhook(request: Request):
+    """Tribute payment webhook: activate access on subscription events."""
+    key = settings.tribute_api_key
+    if not key:
+        raise HTTPException(status_code=404, detail="Not found")
+    body = await request.body()
+    mac = hmac.new(key.encode(), body, hashlib.sha256)
+    sig = request.headers.get("trbt-signature", "")
+    if not (hmac.compare_digest(sig, mac.hexdigest())
+            or hmac.compare_digest(sig, base64.b64encode(mac.digest()).decode())):
+        raise HTTPException(status_code=403, detail="Bad signature")
+    try:
+        event = json.loads(body)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Bad payload")
+
+    name = event.get("name")
+    p = event.get("payload") or {}
+    tid = p.get("telegram_user_id")
+    if name in ("new_subscription", "renewed_subscription", "cancelled_subscription") and tid:
+        with Session(engine) as s:
+            subscriptions.activate(
+                s, int(tid),
+                until=_parse_iso(p.get("expires_at")),
+                charge_id=str(p.get("subscription_id") or "tribute"),
+                is_recurring=(name != "cancelled_subscription"),
+                user={"username": p.get("telegram_username")},
+            )
+        if name == "new_subscription":
+            telegram_api.send_message(int(tid), "✅ Подписка активна — открой приложение из меню бота.")
     return {"ok": True}
 
 

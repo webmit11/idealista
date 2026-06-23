@@ -96,6 +96,11 @@ class Settings(BaseSettings):
     subscription_description: str = "Доступ к аналитике объектов у метро Порту на 30 дней."
     # Secret embedded in the bot webhook URL path (and Telegram secret_token header).
     telegram_webhook_secret: Optional[str] = None
+    # Tribute (card/Wallet payments). When set, the Mini App sends users to this
+    # subscription link and access is granted via the Tribute webhook (signed
+    # with tribute_api_key). Takes precedence over Stars.
+    tribute_api_key: Optional[str] = None
+    tribute_subscription_url: Optional[str] = None
     # Public HTTPS base used to register the webhook, e.g. https://aicraftpin.com
     public_base_url: Optional[str] = None
     # Email / SMTP
