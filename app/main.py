@@ -157,6 +157,7 @@ def mini_app_meta(
         "municipalities": municipalities,
         "typologies": typologies,
         "watch_statuses": [{"value": v, "label": l, "color": c} for v, l, c in WATCH_STATUSES],
+        "new_count": count_properties(session, only_new=True, only_developments=False),
     }
 
 

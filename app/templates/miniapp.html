@@ -812,6 +812,7 @@
       wmap = {}; META.watch_statuses.forEach(s => wmap[s.value] = s);
       $('f_typology').innerHTML = '<option value="">Любая</option>' + META.typologies.map(t => `<option>${t}</option>`).join('');
       $('f_municipality').innerHTML = '<option value="">Любой</option>' + META.municipalities.map(m => `<option>${m}</option>`).join('');
+      if (!META.new_count) { const nt = document.querySelector('.cat[data-id="new"]'); if (nt) nt.remove(); }
     } catch (e) {}
     loadList(true);
     const pid = pendingDetailId();
