@@ -5,7 +5,6 @@ import hmac
 import json
 import logging
 import secrets
-from collections import Counter
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from math import ceil
@@ -56,6 +55,20 @@ def _opt_int(value: Optional[str], default: int) -> int:
         return int(float(value)) if value not in (None, "") else default
     except (TypeError, ValueError):
         return default
+
+
+def _web_owner() -> int:
+    """The owner's Telegram id — the single funnel shared by web + Mini App."""
+    return settings.telegram_owner_id or 0
+
+
+def _overlay_owner_watch(session, rows: list) -> None:
+    """Overlay the owner's personal funnel (user_watches) onto web-serialized rows."""
+    wmap = user_watchlist.get_map(session, _web_owner(), [r["id"] for r in rows])
+    for r in rows:
+        w = wmap.get(r["id"])
+        r["watch_status"] = w.status if w else None
+        r["watch_note"] = w.note if w else None
 
 
 @asynccontextmanager
@@ -448,6 +461,7 @@ def dashboard(
         session, sort=sort_key, limit=per_page, offset=offset, **filter_kwargs
     )
     rows = [serialize(p, s) for p, s in results]
+    _overlay_owner_watch(session, rows)
     municipalities = sorted(
         {
             m
@@ -562,14 +576,9 @@ def set_watch(
     note: str = Form(""),
     session: Session = Depends(get_session),
 ):
-    prop = session.get(Property, property_id)
-    if not prop:
+    if not session.get(Property, property_id):
         raise HTTPException(status_code=404, detail="Property not found")
-    prop.watch_status = normalize_status(status)
-    prop.watch_note = (note or "").strip() or None
-    prop.watch_updated_at = datetime.utcnow()
-    session.add(prop)
-    session.commit()
+    user_watchlist.set_watch(session, _web_owner(), property_id, status, note)
     return RedirectResponse(url=f"/property/{property_id}", status_code=303)
 
 
@@ -579,16 +588,14 @@ def watchlist_view(
     session: Session = Depends(get_session),
     status: Optional[str] = Query(None),
 ):
+    owner = _web_owner()
     active = normalize_status(status)
-    results = query_properties(
-        session, watched_only=True, active_only=False, watch_status=active,
-        sort="watch_desc", limit=1000,
-    )
-    rows = [serialize(p, s) for p, s in results]
-    all_watched = query_properties(
-        session, watched_only=True, active_only=False, sort="watch_desc", limit=1000
-    )
-    counts = Counter(p.watch_status for p, _ in all_watched)
+    rows = []
+    for prop, score, w in user_watchlist.list_watched(session, owner, active):
+        d = serialize(prop, score)
+        d["watch_status"], d["watch_note"] = w.status, w.note
+        rows.append(d)
+    counts = user_watchlist.counts(session, owner)
     return templates.TemplateResponse(
         request,
         "watchlist.html",
@@ -600,7 +607,7 @@ def watchlist_view(
             "colors": WATCH_COLORS,
             "counts": counts,
             "active_status": active,
-            "total_watched": len(all_watched),
+            "total_watched": sum(counts.values()),
         },
     )
 
@@ -761,6 +768,7 @@ def property_detail(
         .order_by(PriceHistory.observed_at)
     ).all()
     data = serialize(prop, score)
+    _overlay_owner_watch(session, [data])
 
     ltv_f, rate_f, term_i = _opt_float(ltv), _opt_float(rate), _opt_int(term, 0)
     invest = compute_investment(
