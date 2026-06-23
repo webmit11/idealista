@@ -164,6 +164,21 @@
 </div>
 {% endif %}
 
+{% if invest and invest.al and p.has_al_license %}
+<div class="panel" style="margin-bottom:16px;">
+  <h3 style="margin-top:0;">Доход по краткосрочной аренде (AL)
+    <span class="newbadge" style="background:#2a1f47; color:#cbb4ff; border:none;">🏷 Airbnb-режим</span>
+  </h3>
+  <div class="kv">
+    <div>Выручка / мес (валовая)</div><div>{{ '{:,.0f}'.format(invest.al.monthly_gross).replace(',', ' ') }} €</div>
+    <div>Выручка / год (валовая)</div><div>{{ '{:,.0f}'.format(invest.al.annual_gross).replace(',', ' ') }} €</div>
+    <div>Валовая доходность</div><div><b>{{ invest.al.gross_yield }}%</b></div>
+    <div>Чистая доходность (расходы {{ invest.al.opex_pct }}%)</div><div><b>{{ invest.al.net_yield }}%</b></div>
+  </div>
+  <div class="meta" style="margin-top:10px;">Оценка ~{{ invest.al.multiplier }}× к долгосрочной аренде; расходы выше (уборка, управление, площадки, простои). Реальный доход зависит от ставки за ночь и загрузки — модель, не гарантия и не финсовет.</div>
+</div>
+{% endif %}
+
 {% if history %}
 <div class="panel">
   <h3 style="margin-top:0;">Price history</h3>

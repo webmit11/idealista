@@ -130,6 +130,9 @@ class Settings(BaseSettings):
     notary_registration_eur: float = 1500.0  # notary + land registry estimate
     imi_rate: float = 0.003                  # annual IMI proxy (% of price)
     operating_cost_pct: float = 0.20         # of rent: vacancy/maintenance/mgmt/condo/insurance
+    # Short-term rental (Alojamento Local) scenario, shown for AL-licensed listings.
+    al_gross_multiplier: float = 1.9         # AL gross revenue vs long-term rent (typology-tilted)
+    al_operating_cost_pct: float = 0.40      # higher opex: cleaning/management/utilities/fees/vacancy
     mortgage_ltv: float = 0.70               # loan-to-value
     mortgage_rate: float = 0.035             # annual interest rate
     mortgage_term_years: int = 30

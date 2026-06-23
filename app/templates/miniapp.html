@@ -252,8 +252,10 @@
 
   function card(r) {
     const img = r.thumbnail_url ? `<img src="${r.thumbnail_url}" alt="">` : '<img alt="">';
-    const yld = r.gross_yield_percent != null ? f1(r.gross_yield_percent) + '%' : '—';
-    const yc = yColor(r.gross_yield_percent);
+    const isAL = r.has_al_license && r.al_gross_yield != null;
+    const yv = isAL ? r.al_gross_yield : r.gross_yield_percent;
+    const yld = yv != null ? f1(yv) + '%' : '—';
+    const yc = yColor(yv);
     const dist = r.distance_to_metro_m != null ? fmt(r.distance_to_metro_m) + ' м' : '—';
     const walk = r.walking_minutes_to_metro_estimate != null ? ' · ' + r.walking_minutes_to_metro_estimate + ' мин' : '';
     const drop = r.price_drop_percent ? ` · 🔻${f1(r.price_drop_percent)}%` : '';
@@ -263,7 +265,7 @@
     return `<div class="card" onclick="openDetail(${r.id})">${img}<div class="body">
       <div class="row1"><span class="score" style="background:${scoreColor(r.total_score)}">${r.total_score != null ? Math.round(r.total_score) : '—'}</span>
         <span class="price">${eur(r.price)}</span>
-        <span style="margin-left:auto; background:${yc[0]}; color:${yc[1]}; font-size:13px; font-weight:600; padding:3px 11px; border-radius:20px; white-space:nowrap;">доход. ${yld}</span></div>
+        <span style="margin-left:auto; background:${yc[0]}; color:${yc[1]}; font-size:13px; font-weight:600; padding:3px 11px; border-radius:20px; white-space:nowrap;">${isAL ? '🏷 AL ' : ''}доход. ${yld}</span></div>
       <div class="title">${r.title || 'Listing ' + r.id}${al}${ws}</div>
       <div class="facts">${r.typology || ''} · ${fmt(r.price_per_m2)} €/m² · ${r.municipality || ''}${r.parish ? ' / ' + r.parish : ''}<br>
         🚇 ${r.nearest_metro_station || '—'} · ${dist}${walk}${drop}</div>
@@ -339,6 +341,17 @@
         <div class="line"><span>Cash-on-cash</span><span>${f1(m.cash_on_cash)}%</span></div></div>`;
     }
 
+    let al = '';
+    if (iv && iv.al && r.has_al_license) {
+      const x = iv.al;
+      al = `<div class="panel"><h3 style="display:flex; align-items:center;">Доход по краткосрочной (AL)<span style="margin-left:8px; font-size:12px; font-weight:600; padding:2px 9px; border-radius:12px; background:#2a1f47; color:#cbb4ff;">🏷 Airbnb-режим</span></h3>
+        <div class="line"><span>Выручка / мес (вал.)</span><span>${eur(x.monthly_gross)}</span></div>
+        <div class="line"><span>Выручка / год (вал.)</span><span>${eur(x.annual_gross)}</span></div>
+        <div class="line"><span>Валовая доходность</span><span>${f1(x.gross_yield)}%</span></div>
+        <div class="line"><span>Чистая (расходы ${x.opex_pct}%)</span><span>${f1(x.net_yield)}%</span></div>
+        <div class="meta" style="margin-top:6px;">Оценка ~${x.multiplier}× к долгосрочной аренде. Реальный доход зависит от ставки и загрузки — модель, не гарантия.</div></div>`;
+    }
+
     const cur = r.watch_status || '';
     state._cur = cur;
     const wbtns = d.watch_statuses.map(s =>
@@ -386,7 +399,7 @@
     $('detailBody').innerHTML = gal + `<div class="pad">
       <div class="row1" style="margin-bottom:8px;"><span class="score" style="background:${scoreColor(r.total_score)}">${r.total_score != null ? Math.round(r.total_score) : '—'}</span>
         <b style="font-size:15px; flex:1; min-width:0;">${r.title || 'Listing ' + r.id}</b>${heart}</div>
-      ${expert}${ppm}${facts}${mapHtml}${why}${inv}${watch}${open}</div>`;
+      ${expert}${ppm}${facts}${mapHtml}${why}${al}${inv}${watch}${open}</div>`;
     initMap(r);
   }
 

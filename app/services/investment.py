@@ -36,6 +36,18 @@ def imt(price: float, brackets=IMT_BRACKETS_SECONDARY) -> float:
     return 0.0
 
 
+def al_multiplier(typology: Optional[str]) -> float:
+    """Short-term (AL) gross revenue multiplier over long-term rent, tilted by
+    typology — smaller units command a bigger short-term premium in Porto."""
+    base = settings.al_gross_multiplier
+    t = (typology or "").upper()
+    if t in ("T0", "T1", "STUDIO"):
+        return round(base * 1.15, 3)
+    if t in ("T3", "T4", "T5", "T6"):
+        return round(base * 0.85, 3)
+    return base
+
+
 def monthly_payment(loan: float, annual_rate: float, years: int) -> float:
     if loan <= 0:
         return 0.0
@@ -78,6 +90,14 @@ def compute_investment(
     gross_yield = round(annual_rent / total_investment * 100, 2)
     net_yield = round(noi / total_investment * 100, 2)
 
+    # --- Short-term rental (Alojamento Local) scenario ---
+    al_mult = al_multiplier(typology)
+    al_annual_gross = round(annual_rent * al_mult, 2)
+    al_opex = round(al_annual_gross * settings.al_operating_cost_pct, 2)
+    al_noi = round(al_annual_gross - al_opex - imi, 2)
+    al_gross_yield = round(al_annual_gross / total_investment * 100, 2)
+    al_net_yield = round(al_noi / total_investment * 100, 2)
+
     # --- Mortgage scenario ---
     loan = round(price * ltv, 2)
     down_payment = round(price - loan, 2)
@@ -98,6 +118,13 @@ def compute_investment(
             "rent_mid": rent_mid, "annual_rent": annual_rent, "imi": imi, "opex": opex,
             "operating_costs": operating_costs, "noi": noi,
             "gross_yield": gross_yield, "net_yield": net_yield,
+        },
+        "al": {
+            "multiplier": al_mult,
+            "monthly_gross": round(al_annual_gross / 12, 2),
+            "annual_gross": al_annual_gross,
+            "opex": al_opex, "opex_pct": round(settings.al_operating_cost_pct * 100),
+            "noi": al_noi, "gross_yield": al_gross_yield, "net_yield": al_net_yield,
         },
         "mortgage": {
             "ltv_pct": round(ltv * 100, 1), "rate_pct": round(rate * 100, 2),
