@@ -22,7 +22,8 @@ _STR_KEYS = ("typology", "municipality")
 # has_* map to Optional[bool] in query_properties; the rest are plain flags.
 _TRI_BOOL_KEYS = ("has_garage", "has_elevator", "has_terrace")
 _FLAG_KEYS = ("south_facing", "only_price_drops", "only_new", "exclude_ground_floor",
-              "exclude_no_coordinates", "exclude_bad_neighborhoods", "only_exact_location")
+              "exclude_no_coordinates", "exclude_bad_neighborhoods", "only_exact_location",
+              "expert_positive")
 
 
 def _num(v):

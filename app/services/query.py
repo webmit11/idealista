@@ -79,10 +79,16 @@ def _apply_filters(
     watch_status: Optional[str] = None,
     active_only: bool = True,
     only_developments: Optional[bool] = None,
+    expert_positive: bool = False,
     ids: Optional[list] = None,
 ):
     if ids is not None:
         stmt = stmt.where(Property.id.in_(ids))
+    if expert_positive:
+        stmt = stmt.where(
+            Property.expert_delta != None,  # noqa: E711
+            Property.expert_delta > 0,
+        )
     if only_delisted:
         stmt = stmt.where(Property.is_active == False)  # noqa: E712
     elif active_only:
