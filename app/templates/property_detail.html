@@ -18,6 +18,23 @@
   </form>
 </div>
 
+<div class="panel" style="margin-bottom:16px;">
+  <h3 style="margin-top:0;">AL-категория
+    {% if p.has_al_license %}<span class="newbadge" style="background:#2a1f47; color:#cbb4ff; border:none;">🏷 AL</span>{% endif %}
+    <span style="color:var(--muted); font-weight:normal; font-size:13px;">· {{ 'вручную' if p.al_override is not none else 'авто' }}</span>
+  </h3>
+  <form method="post" action="/property/{{ p.id }}/al-override" style="display:flex; gap:8px; flex-wrap:wrap;">
+    {% if p.has_al_license %}
+      <button class="btn secondary" name="value" value="not_al">✗ Это не AL (убрать из AL-категории)</button>
+    {% else %}
+      <button class="btn secondary" name="value" value="al">🏷 Пометить как AL</button>
+    {% endif %}
+    {% if p.al_override is not none %}
+      <button class="btn secondary" name="value" value="auto">↺ Авто-определение</button>
+    {% endif %}
+  </form>
+</div>
+
 {% if p.image_urls %}
 <div class="panel" style="margin-bottom:16px;">
   <div class="gallery">

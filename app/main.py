@@ -32,6 +32,7 @@ from app.services.metro_stations import METRO_STATIONS
 from app.services.query import VALID_SORTS, count_properties, query_properties, serialize
 from app.services.explain import explain_score
 from app.services.expert_note import expert_note
+from app.services.al_license import detect_al_license
 from app.services.expert_llm import expert_facts, generate_expert
 from app.services.investment import compute_investment
 from app.services.scoring import compute_score
@@ -293,6 +294,46 @@ def mini_app_set_watch(
         raise HTTPException(status_code=404, detail="Property not found")
     w = user_watchlist.set_watch(session, int(user["id"]), property_id, status, note)
     return {"ok": True, "watch_status": w.status if w else None, "watch_note": w.note if w else None}
+
+
+def _set_al_override(session: Session, prop: Property, value: str) -> None:
+    """Apply an owner AL override (not_al / al / auto), recompute the flag, drop the
+    cached AL-framed expert commentary so it regenerates, and re-score."""
+    if value == "auto":
+        prop.al_override = None
+        prop.has_al_license = detect_al_license(prop.description, prop.title)
+    elif value == "al":
+        prop.al_override = True
+        prop.has_al_license = True
+    else:  # not_al
+        prop.al_override = False
+        prop.has_al_license = False
+    prop.expert_text = None
+    prop.expert_delta = None
+    session.add(prop)
+    score = session.get(Score, prop.id)
+    if score:
+        med = (score.explanation_json or {}).get("median_price_per_m2_benchmark")
+        result = compute_score(prop, med)
+        score.total_score = result.total_score
+        score.explanation_json = result.explanation
+        score.calculated_at = datetime.utcnow()
+        session.add(score)
+    session.commit()
+
+
+@app.post("/app/api/property/{property_id}/al_override")
+def mini_app_al_override(
+    property_id: int,
+    value: str = Query("not_al"),
+    session: Session = Depends(get_session),
+    user: dict = Depends(require_owner),
+):
+    prop = session.get(Property, property_id)
+    if not prop:
+        raise HTTPException(status_code=404, detail="Property not found")
+    _set_al_override(session, prop, value)
+    return {"ok": True, "has_al_license": prop.has_al_license, "al_override": prop.al_override}
 
 
 @app.get("/app/api/watchlist")
@@ -676,6 +717,18 @@ def set_watch(
     if not session.get(Property, property_id):
         raise HTTPException(status_code=404, detail="Property not found")
     user_watchlist.set_watch(session, _web_owner(), property_id, status, note)
+    return RedirectResponse(url=f"/property/{property_id}", status_code=303)
+
+
+@app.post("/property/{property_id}/al-override")
+def web_al_override(
+    property_id: int,
+    value: str = Form("not_al"),
+    session: Session = Depends(get_session),
+):
+    prop = session.get(Property, property_id)
+    if prop:
+        _set_al_override(session, prop, value)
     return RedirectResponse(url=f"/property/{property_id}", status_code=303)
 
 

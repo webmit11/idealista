@@ -360,6 +360,15 @@
         <div class="meta" style="margin-top:6px;">Оценка ~${x.multiplier}× к долгосрочной аренде. Реальный доход зависит от ставки и загрузки — модель, не гарантия.</div></div>`;
     }
 
+    let alAdmin = '';
+    if (ME.owner) {
+      const btns = r.has_al_license
+        ? `<button class="reset" onclick="setAl(${r.id},'not_al')">✗ Это не AL</button>`
+        : `<button class="reset" onclick="setAl(${r.id},'al')">🏷 Пометить как AL</button>`;
+      const auto = r.al_override != null ? ` <button class="reset" onclick="setAl(${r.id},'auto')">↺ Авто</button>` : '';
+      alAdmin = `<div class="panel"><div class="meta" style="margin-bottom:6px;">Админ · AL-категория: ${r.al_override != null ? 'вручную' : 'авто'}</div>${btns}${auto}</div>`;
+    }
+
     const cur = r.watch_status || '';
     state._cur = cur;
     const wbtns = d.watch_statuses.map(s =>
@@ -407,7 +416,7 @@
     $('detailBody').innerHTML = gal + `<div class="pad">
       <div class="row1" style="margin-bottom:8px;"><span class="score" style="background:${scoreColor(r.total_score)}">${r.total_score != null ? Math.round(r.total_score) : '—'}</span>
         <b style="font-size:15px; flex:1; min-width:0;">${r.title || 'Listing ' + r.id}</b>${heart}</div>
-      ${expert}${ppm}${facts}${mapHtml}${why}${r.has_al_license ? al : inv}${watch}${open}</div>`;
+      ${expert}${ppm}${facts}${mapHtml}${why}${r.has_al_license ? al : inv}${alAdmin}${watch}${open}</div>`;
     initMap(r);
   }
 
@@ -495,6 +504,7 @@
   }
   async function deleteSavedFilter(id) { await apiSend('/app/api/filters/' + id, 'DELETE'); loadSavedFilters(); }
   async function toggleSavedFilter(id, active) { await apiSend('/app/api/filters/' + id + '/toggle?active=' + active, 'POST'); loadSavedFilters(); }
+  async function setAl(id, value) { await apiSend('/app/api/property/' + id + '/al_override?value=' + value, 'POST'); openDetail(id); }
   function applySavedFilter(c) {
     c = c || {};
     resetFilters();

@@ -225,6 +225,7 @@ def serialize(prop: Property, score: Optional[Score]) -> dict:
         "has_elevator": prop.has_elevator,
         "has_garage": prop.has_garage,
         "has_al_license": prop.has_al_license,
+        "al_override": prop.al_override,
         "al_gross_yield": (
             round(prop.gross_yield_percent * al_multiplier(prop.typology), 2)
             if (prop.has_al_license and prop.gross_yield_percent) else None

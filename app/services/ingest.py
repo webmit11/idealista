@@ -33,7 +33,11 @@ def _apply_fields(prop: Property, item: NormalizedListing) -> None:
         value = getattr(item, field, None)
         if value is not None:
             setattr(prop, field, value)
-    prop.has_al_license = detect_al_license(prop.description, prop.title)
+    # Owner override (set / not-AL) sticks across imports; else auto-detect from text.
+    prop.has_al_license = (
+        prop.al_override if prop.al_override is not None
+        else detect_al_license(prop.description, prop.title)
+    )
     prop.updated_at = datetime.utcnow()
 
 
