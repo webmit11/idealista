@@ -366,7 +366,7 @@
     }
     const heart = `<button class="heart ${cur === 'interested' ? '' : 'off'}" onclick="toggleHeart(${r.id})" aria-label="В воронку">♥</button>`;
     const mapHtml = (r.latitude != null && r.longitude != null)
-      ? `<div class="panel" style="padding:0; overflow:hidden;"><div id="omap" style="height:190px;"></div>${r.exact_location ? '' : '<div class="meta" style="padding:8px 12px;">Приблизительная зона — точный адрес скрыт</div>'}</div>`
+      ? `<div class="panel" style="padding:0; overflow:hidden;"><div id="omap" style="height:190px; background:#2a2f3a;"></div>${r.exact_location ? '' : '<div class="meta" style="padding:8px 12px;">Приблизительная зона — точный адрес скрыт</div>'}</div>`
       : '';
     $('detailBody').innerHTML = gal + `<div class="pad">
       <div class="row1" style="margin-bottom:8px;"><span class="score" style="background:${scoreColor(r.total_score)}">${r.total_score != null ? Math.round(r.total_score) : '—'}</span>
@@ -381,12 +381,13 @@
     if (!el) return;
     const m = L.map(el, { attributionControl: false, scrollWheelZoom: false })
               .setView([r.latitude, r.longitude], r.exact_location ? 16 : 14);
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(m);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(m);
     if (r.exact_location)
       L.circleMarker([r.latitude, r.longitude], { radius: 8, color: '#fff', weight: 2, fillColor: '#4f8cff', fillOpacity: 1 }).addTo(m);
     else
       L.circle([r.latitude, r.longitude], { radius: 450, color: '#4f8cff', weight: 1, fillColor: '#4f8cff', fillOpacity: 0.18 }).addTo(m);
-    setTimeout(() => m.invalidateSize(), 60);
+    setTimeout(() => m.invalidateSize(), 80);
+    setTimeout(() => m.invalidateSize(), 400);
   }
 
   async function setWatch(id, status) {
