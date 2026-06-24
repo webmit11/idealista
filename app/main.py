@@ -81,6 +81,12 @@ async def lifespan(app: FastAPI):
     setup_logging()
     if settings.auto_create_tables:
         init_db()
+    try:
+        from app.services.refresh_service import cleanup_stale_runs
+
+        cleanup_stale_runs()
+    except Exception:
+        logger.exception("stale-run cleanup failed")
     if settings.scheduler_enabled:
         start_scheduler()
     if settings.telegram_webhook_secret and settings.public_base_url and settings.telegram_bot_token:

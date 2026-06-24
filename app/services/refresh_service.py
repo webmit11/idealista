@@ -37,6 +37,26 @@ def _in_progress(run: Optional[RefreshRun]) -> bool:
     )
 
 
+def cleanup_stale_runs() -> int:
+    """Mark interrupted in-progress runs (older than the stale window) as failed, so
+    a crash/restart mid-refresh doesn't leave a dangling 'running' record."""
+    with Session(engine) as session:
+        rows = session.exec(
+            select(RefreshRun).where(
+                RefreshRun.finished_at == None,  # noqa: E711
+                RefreshRun.started_at < datetime.utcnow() - _STALE_AFTER,
+            )
+        ).all()
+        for run in rows:
+            run.finished_at = datetime.utcnow()
+            run.ok = False
+            run.error = "interrupted (restart)"
+            session.add(run)
+        if rows:
+            session.commit()
+        return len(rows)
+
+
 def refresh_status(session: Session) -> dict:
     run = latest_run(session)
     interval = timedelta(hours=settings.manual_refresh_min_interval_hours)
