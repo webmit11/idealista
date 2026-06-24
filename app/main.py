@@ -880,6 +880,56 @@ def areas_view(request: Request, session: Session = Depends(get_session)):
     )
 
 
+@app.get("/leads", response_class=HTMLResponse)
+def leads_view(request: Request, session: Session = Depends(get_session)):
+    leads = session.exec(select(Lead).order_by(Lead.created_at.desc())).all()
+    pids = [l.property_id for l in leads if l.property_id]
+    props = (
+        {p.id: p for p in session.exec(select(Property).where(Property.id.in_(pids))).all()}
+        if pids
+        else {}
+    )
+    rows = [
+        {
+            "name": l.name,
+            "phone": l.phone,
+            "telegram_id": l.telegram_id,
+            "created_at": l.created_at,
+            "property": props.get(l.property_id),
+        }
+        for l in leads
+    ]
+    return templates.TemplateResponse(
+        request, "leads.html", {"leads": rows, "app_name": settings.app_name}
+    )
+
+
+@app.get("/exports/leads.csv")
+def leads_csv(session: Session = Depends(get_session)):
+    import csv
+    import io
+
+    leads = session.exec(select(Lead).order_by(Lead.created_at.desc())).all()
+    buf = io.StringIO()
+    writer = csv.writer(buf)
+    writer.writerow(["created_at", "name", "phone", "telegram_id", "property_id"])
+    for l in leads:
+        writer.writerow(
+            [
+                l.created_at.isoformat(sep=" ", timespec="minutes"),
+                l.name or "",
+                l.phone or "",
+                l.telegram_id,
+                l.property_id or "",
+            ]
+        )
+    return Response(
+        content=buf.getvalue(),
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": "attachment; filename=leads.csv"},
+    )
+
+
 @app.get("/new", response_class=HTMLResponse)
 def new_view(
     request: Request,

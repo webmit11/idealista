@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Лиды — {{ app_name }}{% endblock %}
+{% block content %}
+
+<h1 style="margin:0 0 4px;">Лиды из чата-консультанта</h1>
+<p class="meta" style="margin:0 0 16px;">Контакты, оставленные в чате по объекту. Всего: {{ leads|length }}. <a href="/exports/leads.csv">Скачать CSV</a></p>
+
+<table>
+  <thead>
+    <tr><th>Дата</th><th>Имя</th><th>Телефон</th><th>TG id</th><th>Объект (что смотрел)</th></tr>
+  </thead>
+  <tbody>
+    {% for l in leads %}
+    <tr>
+      <td>{{ l.created_at.strftime('%d.%m.%Y %H:%M') }}</td>
+      <td>{{ l.name or '—' }}</td>
+      <td>{{ l.phone or '—' }}</td>
+      <td>{{ l.telegram_id }}</td>
+      <td>{% if l.property %}<a href="/property/{{ l.property.id }}">{{ (l.property.title or 'Listing %s'|format(l.property.id))|truncate(44) }}</a> · {{ '{:,.0f}'.format(l.property.price).replace(',', ' ') if l.property.price else '' }} €{% else %}—{% endif %}</td>
+    </tr>
+    {% else %}
+    <tr><td colspan="5" style="text-align:center; padding:30px; color:var(--muted);">Пока нет лидов.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+{% endblock %}
