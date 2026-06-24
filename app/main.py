@@ -669,6 +669,8 @@ def dashboard(
         qs_params["typology"] = typology
     if municipality:
         qs_params["municipality"] = municipality
+    if parish:
+        qs_params["parish"] = parish
     for key, val in (
         ("only_price_drops", only_price_drops), ("only_new", only_new),
         ("has_garage", has_garage), ("has_elevator", has_elevator),
