@@ -72,6 +72,8 @@ class Settings(BaseSettings):
     # incomplete coverage (old Idealista listings we hadn't seen yet), not finding
     # genuinely new ones — so that batch is not shown as new / alerted.
     new_listing_max_batch: int = 80
+    # The New tab only surfaces new listings scoring at least this (hide weak ones).
+    new_listing_min_score: int = 50
     # Default minimum score on the dashboard (empty "Min score" field -> this).
     # Set 0 in the field to see everything.
     dashboard_min_score: float = 50.0

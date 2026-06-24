@@ -157,7 +157,10 @@ def mini_app_meta(
         "municipalities": municipalities,
         "typologies": typologies,
         "watch_statuses": [{"value": v, "label": l, "color": c} for v, l, c in WATCH_STATUSES],
-        "new_count": count_properties(session, only_new=True, only_developments=False),
+        "new_count": count_properties(
+            session, only_new=True, only_developments=False,
+            min_score=settings.new_listing_min_score,
+        ),
     }
 
 
@@ -825,12 +828,13 @@ def new_view(
 ):
     days_i = min(90, max(1, _opt_int(days, settings.new_listing_days)))
     per_page = min(200, max(10, _opt_int(limit, 50)))
-    total = count_properties(session, new_within_days=days_i)
+    total = count_properties(session, new_within_days=days_i, min_score=settings.new_listing_min_score)
     total_pages = max(1, ceil(total / per_page))
     page_num = min(max(1, _opt_int(page, 1)), total_pages)
     offset = (page_num - 1) * per_page
     results = query_properties(
-        session, new_within_days=days_i, sort="newest", limit=per_page, offset=offset
+        session, new_within_days=days_i, min_score=settings.new_listing_min_score,
+        sort="newest", limit=per_page, offset=offset,
     )
     rows = [serialize(p, s) for p, s in results]
     return templates.TemplateResponse(
