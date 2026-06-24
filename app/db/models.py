@@ -204,5 +204,6 @@ class Lead(SQLModel, table=True):
     telegram_id: int = Field(index=True)
     name: Optional[str] = None
     phone: Optional[str] = None
+    country: Optional[str] = None  # ISO-3166 alpha-2 from IP (GeoLite2), for origin stats
     property_id: Optional[int] = None
     created_at: datetime = Field(default_factory=utcnow)

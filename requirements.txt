@@ -13,3 +13,4 @@ APScheduler>=3.10,<4.0
 python-multipart>=0.0.9
 alembic>=1.13
 anthropic>=0.40
+geoip2>=4.8

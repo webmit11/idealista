@@ -162,6 +162,13 @@ class Settings(BaseSettings):
     # estate changes slowly, so a wider interval cuts scraping cost. 1 = every day.
     import_interval_days: int = 1
 
+    # --- GeoIP (MaxMind GeoLite2): phone dial-code prefill + lead-origin stats ---
+    # When maxmind_license_key is set, the GeoLite2-Country DB is downloaded to
+    # geoip_db_path and refreshed monthly; without a key the feature is inert.
+    maxmind_license_key: Optional[str] = None
+    geoip_db_path: str = "data/GeoLite2-Country.mmdb"
+    geoip_edition: str = "GeoLite2-Country"
+
     # --- Paths ---
     mock_data_path: str = "sample_data/properties_mock.json"
     raw_data_dir: str = "data/raw"

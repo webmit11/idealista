@@ -38,7 +38,7 @@ from app.services.investment import compute_investment
 from app.services.scoring import compute_score
 from app.services.refresh_service import refresh_status, trigger_refresh
 from app.services.telegram_auth import require_owner, require_subscriber, require_telegram_user
-from app.services import area_scoring, property_chat, saved_filters, subscriptions, telegram_api, user_watchlist
+from app.services import area_scoring, geoip, property_chat, saved_filters, subscriptions, telegram_api, user_watchlist
 from app.services.watchlist import WATCH_COLORS, WATCH_LABELS, WATCH_STATUSES, normalize_status
 
 logger = logging.getLogger("app")
@@ -87,6 +87,10 @@ async def lifespan(app: FastAPI):
         cleanup_stale_runs()
     except Exception:
         logger.exception("stale-run cleanup failed")
+    try:
+        geoip.ensure_db()
+    except Exception:
+        logger.exception("geoip db init failed")
     if settings.scheduler_enabled:
         start_scheduler()
     if settings.telegram_webhook_secret and settings.public_base_url and settings.telegram_bot_token:
@@ -473,6 +477,7 @@ def mini_app_filters_toggle(
 
 @app.get("/app/api/me")
 def mini_app_me(
+    request: Request,
     session: Session = Depends(get_session),
     user: dict = Depends(require_telegram_user),
 ):
@@ -484,6 +489,7 @@ def mini_app_me(
     st["subscribe_url"] = settings.tribute_subscription_url  # Tribute link; null -> use Stars
     st["consultant"] = _consultant_for(uid)
     st["contact_given"] = session.exec(select(Lead.id).where(Lead.telegram_id == uid)).first() is not None
+    st["dial_code"] = geoip.dial_code_for_ip(geoip.client_ip(request))  # phone prefix from IP
     return st
 
 
@@ -502,6 +508,7 @@ async def mini_app_lead(
     name = str(body.get("name") or "").strip()[:80] or user.get("first_name")
     pid = body.get("property_id")
     pid = int(pid) if isinstance(pid, int) or (isinstance(pid, str) and pid.isdigit()) else None
+    country = geoip.country_for_ip(geoip.client_ip(request))
     lead = session.exec(select(Lead).where(Lead.telegram_id == uid)).first()
     if lead:
         if phone:
@@ -510,8 +517,10 @@ async def mini_app_lead(
             lead.name = name
         if pid:
             lead.property_id = pid
+        if country:
+            lead.country = country
     else:
-        lead = Lead(telegram_id=uid, name=name, phone=phone or None, property_id=pid)
+        lead = Lead(telegram_id=uid, name=name, phone=phone or None, country=country, property_id=pid)
     session.add(lead)
     session.commit()
     return {"ok": True}
@@ -896,14 +905,22 @@ def leads_view(request: Request, session: Session = Depends(get_session)):
         {
             "name": l.name,
             "phone": l.phone,
+            "country": l.country,
             "telegram_id": l.telegram_id,
             "created_at": l.created_at,
             "property": props.get(l.property_id),
         }
         for l in leads
     ]
+    origins: dict = {}
+    for l in leads:
+        key = l.country or "—"
+        origins[key] = origins.get(key, 0) + 1
+    origins = sorted(origins.items(), key=lambda kv: kv[1], reverse=True)
     return templates.TemplateResponse(
-        request, "leads.html", {"leads": rows, "app_name": settings.app_name}
+        request,
+        "leads.html",
+        {"leads": rows, "origins": origins, "app_name": settings.app_name},
     )
 
 
@@ -915,13 +932,14 @@ def leads_csv(session: Session = Depends(get_session)):
     leads = session.exec(select(Lead).order_by(Lead.created_at.desc())).all()
     buf = io.StringIO()
     writer = csv.writer(buf)
-    writer.writerow(["created_at", "name", "phone", "telegram_id", "property_id"])
+    writer.writerow(["created_at", "name", "phone", "country", "telegram_id", "property_id"])
     for l in leads:
         writer.writerow(
             [
                 l.created_at.isoformat(sep=" ", timespec="minutes"),
                 l.name or "",
                 l.phone or "",
+                l.country or "",
                 l.telegram_id,
                 l.property_id or "",
             ]

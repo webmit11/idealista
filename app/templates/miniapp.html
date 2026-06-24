@@ -672,7 +672,7 @@
       chatLog = [{ role: 'assistant', content: 'Здравствуйте! Меня зовут ' + cname + ', помогу разобраться с этим объектом 🙂\nОставьте имя и телефон — и задавайте вопросы.' }];
       renderChat();
       area.innerHTML = `<input id="leadName" placeholder="Имя" value="${leadName().replace(/"/g, '&quot;')}" style="width:100%; padding:9px 11px; margin-bottom:8px; border-radius:10px; border:1px solid rgba(255,255,255,.12); background:rgba(255,255,255,.04); color:#e6e8ee; font-size:14px;">
-        <input id="leadPhone" type="tel" inputmode="tel" placeholder="Телефон (WhatsApp/Telegram)" style="width:100%; padding:9px 11px; margin-bottom:8px; border-radius:10px; border:1px solid rgba(255,255,255,.12); background:rgba(255,255,255,.04); color:#e6e8ee; font-size:14px;">
+        <input id="leadPhone" type="tel" inputmode="tel" value="${ME.dial_code ? ME.dial_code + ' ' : ''}" placeholder="Телефон (WhatsApp/Telegram)" style="width:100%; padding:9px 11px; margin-bottom:8px; border-radius:10px; border:1px solid rgba(255,255,255,.12); background:rgba(255,255,255,.04); color:#e6e8ee; font-size:14px;">
         <button class="apply" style="margin-top:0;" onclick="saveLead(${id})">Начать диалог</button>
         <div class="meta" style="font-size:11px; margin-top:6px;">Контакт нужен, чтобы консультант мог связаться. Третьим лицам не передаём.</div>`;
     } else {
