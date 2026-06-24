@@ -535,6 +535,10 @@
   }
   function removeFilter(k) {
     delete state.filters[k];
+    if ((k === 'parish' || k === 'municipality') && state.filters.min_score === '0') {
+      delete state.filters.min_score;  // drop the area's "show all" override
+      if ($('f_min_score')) $('f_min_score').value = '';
+    }
     const inputId = { min_score: 'f_min_score', max_price: 'f_max_price', typology: 'f_typology', municipality: 'f_municipality', max_distance_to_metro: 'f_max_dist', min_gross_yield: 'f_min_yield' }[k];
     if (inputId && $(inputId)) $(inputId).value = '';
     if ($('t_' + k)) $('t_' + k).checked = false;
@@ -759,12 +763,24 @@
     });
     $('toggles').innerHTML = TOGGLES.map(([k, label]) =>
       `<label class="toggle"><input type="checkbox" id="t_${k}">${label}</label>`).join('');
-    $('filterBtn').onclick = () => { $('filterSheet').classList.add('open'); loadSavedFilters(); };
+    $('filterBtn').onclick = () => {
+      const base = (TABS.find(t => t.id === state.tab) || {}).base || {};
+      TOGGLES.forEach(([k]) => { $('t_' + k).checked = state.filters[k] === 'true' || base[k] === 'true'; });
+      $('filterSheet').classList.add('open'); loadSavedFilters();
+    };
     $('areasBtn').onclick = () => { $('areasSheet').classList.add('open'); loadAreas(); };
     $('areasClose').onclick = () => $('areasSheet').classList.remove('open');
     $('filterSave').onclick = saveCurrentFilter;
     $('filterClose').onclick = () => $('filterSheet').classList.remove('open');
-    $('filterApply').onclick = () => { readFilters(); $('filterSheet').classList.remove('open'); loadList(true); };
+    $('filterApply').onclick = () => {
+      const base = (TABS.find(t => t.id === state.tab) || {}).base || {};
+      const catKey = Object.keys(base).find(k => base[k] === 'true' && $('t_' + k));
+      if (catKey && !$('t_' + catKey).checked) {  // user turned off the current tab's category
+        state.tab = 'top';
+        document.querySelectorAll('.cat').forEach(x => x.classList.toggle('active', x.dataset.id === 'top'));
+      }
+      readFilters(); $('filterSheet').classList.remove('open'); loadList(true);
+    };
     $('filterReset').onclick = () => { resetFilters(); $('filterSheet').classList.remove('open'); loadList(true); };
     $('more').onclick = () => { state.offset += state.limit; loadList(false); };
     $('detailClose').onclick = closeDetail;

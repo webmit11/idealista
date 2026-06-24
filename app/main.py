@@ -345,7 +345,10 @@ async def mini_app_property_chat(
     prop = session.get(Property, property_id)
     if not prop:
         raise HTTPException(status_code=404, detail="Property not found")
-    body = await request.json()
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
     score = session.get(Score, property_id)
     expl = (score.explanation_json or {}) if score else {}
     context = expert_facts(prop, expl)
@@ -422,7 +425,10 @@ async def mini_app_filters_create(
     session: Session = Depends(get_session),
     user: dict = Depends(require_subscriber),
 ):
-    body = await request.json()
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
     sf = saved_filters.create(session, int(user["id"]), body.get("name"), body.get("criteria") or {})
     if not sf:
         raise HTTPException(status_code=400, detail="Достигнут лимит сохранённых поисков")
