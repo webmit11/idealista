@@ -425,6 +425,11 @@
         ${diff != null ? `<div style="text-align:center; background:${bg}; color:${tc}; padding:8px 14px; border-radius:13px;"><div style="font-size:19px; font-weight:700;">${diff > 0 ? '+' : '−'}${f1(Math.abs(diff))}%</div><div style="font-size:11px;">${word}</div></div>` : ''}
       </div>`;
     }
+    let dropHtml = '';
+    if (r.price_drop_percent) {
+      const when = r.price_dropped_at ? new Date(r.price_dropped_at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' }) : '';
+      dropHtml = `<div class="panel" style="background:#3a2326;"><div style="color:#ffb4ac; font-weight:600; font-size:15px;">🔻 Цена снижена на ${f1(r.price_drop_percent)}%${r.price_drop_amount ? ' (−' + eur(r.price_drop_amount) + ')' : ''}</div><div class="meta" style="margin-top:4px; color:#e8b4b0;">было ${eur(r.previous_price)} → стало ${eur(r.price)}${when ? ' · зафиксировано ' + when : ''}</div></div>`;
+    }
     const url = idealistaUrl(r);
     const open = url ? `<a class="open-btn" href="#" onclick="tg.openLink('${url}');return false;">Открыть на Idealista →</a>` : '';
     let expert = '';
@@ -451,7 +456,7 @@
     $('detailBody').innerHTML = gal + `<div class="pad">
       <div class="row1" style="margin-bottom:8px;"><span class="score" style="background:${scoreColor(r.total_score)}">${r.total_score != null ? Math.round(r.total_score) : '—'}</span>
         <b style="font-size:15px; flex:1; min-width:0;">${r.title || 'Listing ' + r.id}</b>${heart}</div>
-      ${expert}${ppm}${facts}${mapHtml}${why}${r.has_al_license ? al : inv}${sim}${chat}${alAdmin}${watch}${open}</div>`;
+      ${expert}${ppm}${dropHtml}${facts}${mapHtml}${why}${r.has_al_license ? al : inv}${sim}${chat}${alAdmin}${watch}${open}</div>`;
     initMap(r);
     initChat(r.id);
     simInit(iv, r);
