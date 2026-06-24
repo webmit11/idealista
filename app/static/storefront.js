@@ -144,4 +144,45 @@
       alFilter.setAttribute('aria-pressed','true');
     });
   }
+
+  /* hero "today's top deal" — soft rotation of a few real listings */
+  var topDeal=document.getElementById('topDeal');
+  if(topDeal){
+    var deals=[
+      {img:'https://aicraftpin.com/img/3578',  score:92, ring:'--pos',  price:'€230,000', sub:'T2 · 85 m² · Bonfim, Porto',         delta:'24% below market', al:false},
+      {img:'https://aicraftpin.com/img/1277',  score:88, ring:'--pos',  price:'€215,000', sub:'T2 · 92 m² · Senhora da Hora',       delta:'18% below market', al:false},
+      {img:'https://aicraftpin.com/img/3578/1',score:84, ring:'--warn', price:'€150,000', sub:'T0 · 35 m² · Santo Ildefonso, Porto', delta:'11% below market', al:true}
+    ];
+    var fcThumb=document.getElementById('fcThumb'),
+        fcScore=document.getElementById('fcScore'),
+        fcScoreNum=document.getElementById('fcScoreNum'),
+        fcPrice=document.getElementById('fcPrice'),
+        fcSub=document.getElementById('fcSub'),
+        fcDelta=document.getElementById('fcDelta').querySelector('.txt'),
+        fcAl=document.getElementById('fcAl'),
+        dots=Array.prototype.slice.call(topDeal.querySelectorAll('.fc-dots button')),
+        idx=0, timer=null;
+    function paint(d){
+      fcThumb.src=d.img;
+      fcScore.style.setProperty('--score', d.score);
+      fcScore.style.setProperty('--ring-color', 'var('+d.ring+')');
+      fcScore.setAttribute('aria-label', 'Deal score '+d.score+' out of 100');
+      fcScoreNum.textContent=d.score;
+      fcPrice.textContent=d.price;
+      fcSub.textContent=d.sub;
+      fcDelta.textContent=d.delta;
+      fcAl.style.display=d.al?'inline-flex':'none';
+      dots.forEach(function(b,k){ var on=k===idx; b.classList.toggle('active',on); b.setAttribute('aria-pressed', on?'true':'false'); });
+    }
+    function show(n){
+      idx=(n+deals.length)%deals.length;
+      if(rm){ paint(deals[idx]); return; }
+      topDeal.style.opacity='.35';
+      setTimeout(function(){ paint(deals[idx]); topDeal.style.opacity='1'; }, 170);
+    }
+    function restart(){ if(timer) clearInterval(timer); if(!rm) timer=setInterval(function(){ show(idx+1); }, 5200); }
+    paint(deals[0]);
+    dots.forEach(function(b,k){ b.addEventListener('click', function(){ show(k); restart(); }); });
+    restart();
+  }
 })();
