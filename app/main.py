@@ -290,13 +290,16 @@ def mini_app_property(
     w = user_watchlist.get_map(session, int(user["id"]), [prop.id]).get(prop.id)
     data["watch_status"] = w.status if w else None
     data["watch_note"] = w.note if w else None
-    if prop.price_drop_percent:
-        last_drop = session.exec(
+    if prop.previous_price:
+        last_change = session.exec(
             select(PriceHistory.observed_at)
             .where(PriceHistory.property_id == prop.id)
             .order_by(PriceHistory.observed_at.desc())
         ).first()
-        data["price_dropped_at"] = last_drop.isoformat() if last_drop else None
+        iso = last_change.isoformat() if last_change else None
+        data["price_changed_at"] = iso
+        if prop.price_drop_percent and prop.price_drop_percent > 0:
+            data["price_dropped_at"] = iso
     _enrich_with_expert(session, prop, score, data)
     return {
         "property": data,

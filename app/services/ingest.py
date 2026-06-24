@@ -99,15 +99,13 @@ def upsert_listing(session: Session, item: NormalizedListing) -> tuple[Property,
         new_price = prop.price
         price_dropped = bool(new_price and old_price and new_price < old_price)
         price_changed = bool(new_price and old_price and new_price != old_price)
-        if price_dropped:
-            amount, percent = ph.compute_drop(old_price, new_price)
+        if price_changed:
             prop.previous_price = old_price
-            prop.price_drop_amount = amount
-            prop.price_drop_percent = percent
-        elif price_changed:  # price went up -> no longer a drop, clear stale markers
-            prop.previous_price = None
-            prop.price_drop_amount = None
-            prop.price_drop_percent = None
+            if price_dropped:
+                prop.price_drop_amount, prop.price_drop_percent = ph.compute_drop(old_price, new_price)
+            else:  # price increased -> keep previous_price for the UI, but it is not a drop
+                prop.price_drop_amount = None
+                prop.price_drop_percent = None
         session.add(prop)
         session.flush()
         if price_changed:
