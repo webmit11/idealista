@@ -194,3 +194,15 @@ class SavedFilter(SQLModel, table=True):
     active: bool = True
     created_at: datetime = Field(default_factory=utcnow)
     last_notified_at: Optional[datetime] = None
+
+
+class Lead(SQLModel, table=True):
+    """Captured contact from the in-app consultant chat (lead-gen, one per user)."""
+    __tablename__ = "leads"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    telegram_id: int = Field(index=True)
+    name: Optional[str] = None
+    phone: Optional[str] = None
+    property_id: Optional[int] = None
+    created_at: datetime = Field(default_factory=utcnow)

@@ -96,6 +96,10 @@
             background: var(--btn); border: 3px solid var(--bg); box-shadow: 0 0 0 1px var(--btn); cursor: pointer; }
     .sim-row input[type=range]::-moz-range-thumb { width: 18px; height: 18px; border-radius: 50%; background: var(--btn); border: 3px solid var(--bg); cursor: pointer; }
     .sim-chart { width: 100%; height: 150px; display: block; margin-top: 6px; }
+    .typing-dots i { display: inline-block; width: 6px; height: 6px; margin: 0 2px; border-radius: 50%; background: #8a93a2; animation: td 1s infinite; }
+    .typing-dots i:nth-child(2) { animation-delay: .2s; }
+    .typing-dots i:nth-child(3) { animation-delay: .4s; }
+    @keyframes td { 0%, 60%, 100% { opacity: .3; transform: translateY(0); } 30% { opacity: 1; transform: translateY(-3px); } }
   </style>
 </head>
 <body>
@@ -397,10 +401,14 @@
       alAdmin = `<div class="panel"><div class="meta" style="margin-bottom:6px;">Админ · AL-категория</div>${rm}${auto}</div>`;
     }
 
-    const chat = `<div class="panel"><h3>💬 Спросить про объект</h3>
-      <div id="chatBox" style="display:flex; flex-direction:column; gap:8px; margin-bottom:8px;"></div>
-      <div id="chatChips" style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px;"></div>
-      <div style="display:flex; gap:6px;"><input id="chatInput" placeholder="Ваш вопрос об этом объекте…" style="flex:1; padding:9px 11px; border-radius:10px; border:1px solid rgba(255,255,255,.12); background:rgba(255,255,255,.04); color:#e6e8ee; font-size:14px;"><button class="reset" style="width:auto; padding:0 16px;" onclick="sendChat(${r.id})">→</button></div></div>`;
+    const cName = ME.consultant || 'Мария';
+    const chat = `<div class="panel">
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+        <div style="width:40px; height:40px; border-radius:50%; background:#7a4ddb; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:17px;">${cName[0]}</div>
+        <div style="line-height:1.25;"><div style="font-weight:600;">${cName}</div><div style="font-size:11.5px; color:#8fe3ab;">● онлайн · консультант Domus</div></div>
+      </div>
+      <div id="chatBox" style="display:flex; flex-direction:column; gap:8px; margin-bottom:10px;"></div>
+      <div id="chatArea"></div></div>`;
 
     const sim = simHtml(iv, r);
 
@@ -617,13 +625,50 @@
     loadList(true);
   }
 
-  // ---- per-listing AI chat ----
+  // ---- per-listing consultant chat (human-like + lead capture) ----
   let chatLog = [];
-  const CHAT_QS = ['Стоит торговаться?', 'Кому сдавать?', 'Главные риски?', 'Сравнить с районом'];
+  const CHAT_QS = ['Стоит торговаться?', 'Кому сдавать?', 'Главные риски?', 'Подойдёт для жизни?'];
+  function leadName() { return (tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.first_name) || ''; }
   function renderChat() {
     const box = $('chatBox'); if (!box) return;
-    box.innerHTML = chatLog.map(m => `<div style="align-self:${m.role === 'user' ? 'flex-end' : 'flex-start'}; max-width:88%; background:${m.role === 'user' ? '#1d3a2a' : 'rgba(255,255,255,.06)'}; color:#e6e8ee; padding:7px 11px; border-radius:13px; font-size:13.5px; line-height:1.45; white-space:pre-wrap;">${m.content.replace(/</g, '&lt;')}</div>`).join('');
+    box.innerHTML = chatLog.map(m => {
+      if (m.typing) return `<div style="align-self:flex-start; background:rgba(255,255,255,.06); padding:10px 14px; border-radius:13px;"><span class="typing-dots"><i></i><i></i><i></i></span></div>`;
+      const me = m.role === 'user';
+      return `<div style="align-self:${me ? 'flex-end' : 'flex-start'}; max-width:88%; background:${me ? '#1d3a2a' : 'rgba(255,255,255,.06)'}; color:#e6e8ee; padding:7px 11px; border-radius:13px; font-size:13.5px; line-height:1.45; white-space:pre-wrap;">${m.content.replace(/</g, '&lt;')}</div>`;
+    }).join('');
     box.scrollTop = box.scrollHeight;
+  }
+  function renderChatInput(id) {
+    const area = $('chatArea'); if (!area) return;
+    area.innerHTML = `<div id="chatChips" style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px;"></div>
+      <div style="display:flex; gap:6px;"><input id="chatInput" placeholder="Ваш вопрос…" style="flex:1; padding:9px 11px; border-radius:10px; border:1px solid rgba(255,255,255,.12); background:rgba(255,255,255,.04); color:#e6e8ee; font-size:14px;"><button class="reset" style="width:auto; padding:0 16px; margin-top:0;" onclick="sendChat(${id})">→</button></div>`;
+    $('chatChips').innerHTML = CHAT_QS.map(q => `<button class="chip" data-q="${q}" onclick="sendChat(${id}, this.dataset.q)">${q}</button>`).join('');
+    const inp = $('chatInput'); if (inp) inp.onkeydown = e => { if (e.key === 'Enter') sendChat(id); };
+  }
+  async function saveLead(id) {
+    const phone = (($('leadPhone') || {}).value || '').trim();
+    const name = (($('leadName') || {}).value || '').trim();
+    if (phone.replace(/\D/g, '').length < 7) { tg.showPopup ? tg.showPopup({ message: 'Укажите номер телефона' }) : alert('Укажите номер телефона'); return; }
+    await apiSend('/app/api/lead', 'POST', { name: name, phone: phone, property_id: id });
+    ME.contact_given = true;
+    chatLog.push({ role: 'assistant', content: 'Спасибо! Спрашивайте — расскажу всё по этому объекту 👇' });
+    renderChat(); renderChatInput(id);
+  }
+  function initChat(id) {
+    const cname = ME.consultant || 'Мария';
+    const area = $('chatArea'); if (!area) return;
+    if (!ME.contact_given) {
+      chatLog = [{ role: 'assistant', content: 'Здравствуйте! Меня зовут ' + cname + ', помогу разобраться с этим объектом 🙂\nОставьте имя и телефон — и задавайте вопросы.' }];
+      renderChat();
+      area.innerHTML = `<input id="leadName" placeholder="Имя" value="${leadName().replace(/"/g, '&quot;')}" style="width:100%; padding:9px 11px; margin-bottom:8px; border-radius:10px; border:1px solid rgba(255,255,255,.12); background:rgba(255,255,255,.04); color:#e6e8ee; font-size:14px;">
+        <input id="leadPhone" type="tel" inputmode="tel" placeholder="Телефон (WhatsApp/Telegram)" style="width:100%; padding:9px 11px; margin-bottom:8px; border-radius:10px; border:1px solid rgba(255,255,255,.12); background:rgba(255,255,255,.04); color:#e6e8ee; font-size:14px;">
+        <button class="apply" style="margin-top:0;" onclick="saveLead(${id})">Начать диалог</button>
+        <div class="meta" style="font-size:11px; margin-top:6px;">Контакт нужен, чтобы консультант мог связаться. Третьим лицам не передаём.</div>`;
+    } else {
+      chatLog = [];
+      renderChat();
+      renderChatInput(id);
+    }
   }
   async function sendChat(id, preset) {
     const inp = $('chatInput');
@@ -631,20 +676,20 @@
     if (!text) return;
     if (inp) inp.value = '';
     chatLog.push({ role: 'user', content: text });
-    const typing = { role: 'assistant', content: '…' };
-    chatLog.push(typing); renderChat();
+    const t1 = { typing: true }; chatLog.push(t1); renderChat();
     let res = null;
-    try { res = await apiSend('/app/api/property/' + id + '/chat', 'POST', { messages: chatLog.filter(m => m !== typing) }); } catch (e) {}
-    chatLog.pop();
-    chatLog.push({ role: 'assistant', content: (res && res.answer) || 'Не удалось ответить, попробуйте ещё раз.' });
-    renderChat();
-  }
-  function initChat(id) {
-    const chips = $('chatChips');
-    if (chips) chips.innerHTML = CHAT_QS.map(q => `<button class="chip" data-q="${q}" onclick="sendChat(${id}, this.dataset.q)">${q}</button>`).join('');
-    const inp = $('chatInput');
-    if (inp) inp.onkeydown = e => { if (e.key === 'Enter') sendChat(id); };
-    renderChat();
+    try { res = await apiSend('/app/api/property/' + id + '/chat', 'POST', { messages: chatLog.filter(m => !m.typing).map(m => ({ role: m.role, content: m.content })) }); } catch (e) {}
+    chatLog = chatLog.filter(m => m !== t1);
+    if (!res || (!res.short && !res.long)) {
+      chatLog.push({ role: 'assistant', content: 'Извините, не смогла ответить — попробуйте ещё раз.' }); renderChat(); return;
+    }
+    if (res.short) { chatLog.push({ role: 'assistant', content: res.short }); renderChat(); }
+    if (res.long) {
+      const t2 = { typing: true }; chatLog.push(t2); renderChat();
+      await new Promise(r => setTimeout(r, 900 + Math.min(1800, (res.long.length || 0) * 9)));
+      chatLog = chatLog.filter(m => m !== t2);
+      chatLog.push({ role: 'assistant', content: res.long }); renderChat();
+    }
   }
 
   // ---- ROI simulator ----

@@ -26,7 +26,7 @@ from app.api import (
 from app.core.config import settings
 from app.core.logging import setup_logging
 from app.db.database import engine, get_session, init_db
-from app.db.models import PriceHistory, Property, Score
+from app.db.models import Lead, PriceHistory, Property, Score
 from app.jobs.scheduler import shutdown_scheduler, start_scheduler
 from app.services.metro_stations import METRO_STATIONS
 from app.services.query import VALID_SORTS, count_properties, query_properties, serialize
@@ -239,6 +239,14 @@ def mini_app_properties(
     return out
 
 
+_CONSULTANTS = ["Мария", "Анна", "София", "Елена", "Ольга", "Наталья", "Ирина", "Екатерина"]
+
+
+def _consultant_for(tid) -> str:
+    """Stable female consultant name per user."""
+    return _CONSULTANTS[int(tid) % len(_CONSULTANTS)]
+
+
 def _enrich_with_expert(session: Session, prop: Property, score: Optional[Score], data: dict) -> None:
     """Median €/m² deviation + cached LLM expert commentary (generated once).
 
@@ -360,10 +368,10 @@ async def mini_app_property_chat(
     context = expert_facts(prop, expl)
     if prop.expert_text:
         context += "\n\nЭкспертная оценка: " + prop.expert_text
-    ans = property_chat.answer(context, body.get("messages") or [])
+    ans = property_chat.answer(context, body.get("messages") or [], consultant=_consultant_for(user["id"]))
     if not ans:
         raise HTTPException(status_code=503, detail="Чат временно недоступен")
-    return {"answer": ans}
+    return ans
 
 
 @app.post("/app/api/property/{property_id}/al_override")
@@ -465,12 +473,45 @@ def mini_app_me(
     session: Session = Depends(get_session),
     user: dict = Depends(require_telegram_user),
 ):
-    subscriptions.start_trial_if_new(session, int(user["id"]), user)
-    st = subscriptions.status(session, int(user["id"]))
+    uid = int(user["id"])
+    subscriptions.start_trial_if_new(session, uid, user)
+    st = subscriptions.status(session, uid)
     st["price_stars"] = settings.subscription_price_stars
     st["period_days"] = settings.subscription_period_days
     st["subscribe_url"] = settings.tribute_subscription_url  # Tribute link; null -> use Stars
+    st["consultant"] = _consultant_for(uid)
+    st["contact_given"] = session.exec(select(Lead.id).where(Lead.telegram_id == uid)).first() is not None
     return st
+
+
+@app.post("/app/api/lead")
+async def mini_app_lead(
+    request: Request,
+    session: Session = Depends(get_session),
+    user: dict = Depends(require_telegram_user),
+):
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    uid = int(user["id"])
+    phone = str(body.get("phone") or "").strip()[:40]
+    name = str(body.get("name") or "").strip()[:80] or user.get("first_name")
+    pid = body.get("property_id")
+    pid = int(pid) if isinstance(pid, int) or (isinstance(pid, str) and pid.isdigit()) else None
+    lead = session.exec(select(Lead).where(Lead.telegram_id == uid)).first()
+    if lead:
+        if phone:
+            lead.phone = phone
+        if name:
+            lead.name = name
+        if pid:
+            lead.property_id = pid
+    else:
+        lead = Lead(telegram_id=uid, name=name, phone=phone or None, property_id=pid)
+    session.add(lead)
+    session.commit()
+    return {"ok": True}
 
 
 @app.post("/app/api/subscribe")
