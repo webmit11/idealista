@@ -39,7 +39,7 @@ class Settings(BaseSettings):
     apify_actor_id: str = "igolaizola~idealista-scraper"
     # Comma-separated Idealista search URLs used when none are passed explicitly.
     apify_search_urls: str = ""
-    apify_max_items: int = 200
+    apify_max_items: int = 500
     apify_country: str = "pt"
     apify_timeout_s: int = 300
     # Drop new-development project listings (/empreendimento/) — not single resale units.
@@ -150,7 +150,7 @@ class Settings(BaseSettings):
 
     # --- Manual refresh button ---
     manual_refresh_min_interval_hours: float = 24.0  # no more than once per day
-    manual_refresh_max_items: int = 200  # results per area for the manual refresh
+    manual_refresh_max_items: int = 500  # results per area for the manual refresh
 
     # --- Scheduler ---
     scheduler_enabled: bool = False
