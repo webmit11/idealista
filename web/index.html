@@ -297,11 +297,14 @@ button,input,select{font:inherit;color:inherit}
 .sec-head h2{font-size:clamp(1.65rem,3.2vw,2.35rem);font-weight:700;letter-spacing:-.035em;line-height:1.08;text-wrap:balance}
 .sec-head p{color:var(--text-2);margin-top:8px;max-width:46ch;font-size:15px}
 .sec-head .right{display:flex;align-items:center;gap:10px}
-.filter-chips{display:flex;gap:6px}
+.filter-chips{display:flex;gap:6px;flex-wrap:wrap}
 .filter-chips button{height:36px;padding:0 14px;border-radius:var(--pill);border:1px solid var(--border);
   background:transparent;font-size:13.5px;font-weight:600;color:var(--text-2);cursor:pointer;transition:all .15s}
 .filter-chips button[aria-pressed="true"]{background:var(--text);color:var(--bg);border-color:var(--text)}
 .filter-chips button:not([aria-pressed="true"]):hover{border-color:var(--border-strong);color:var(--text)}
+.filter-chips .alf{display:inline-flex;align-items:center;gap:6px;color:var(--accent);border-color:var(--accent-line)}
+.filter-chips .alf .icon{width:13px;height:13px;stroke-width:2}
+.filter-chips .alf[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
 .link-arrow{display:inline-flex;align-items:center;gap:6px;font-weight:600;font-size:14.5px;color:var(--accent)}
 .link-arrow .icon{width:16px;height:16px;transition:transform .2s}
 .link-arrow:hover .icon{transform:translateX(3px)}
@@ -481,6 +484,30 @@ input[type=range]:focus-visible::-moz-range-thumb{box-shadow:var(--ring)}
 .is-sent form{display:none}
 .is-sent .form-done{display:flex}
 
+/* ============================================================ flagship: AL short-let */
+.al-sec{padding-block:clamp(6px,2vw,14px) clamp(40px,6vw,68px)}
+.al-wrap{position:relative;overflow:hidden;display:grid;grid-template-columns:1fr;
+  border:1px solid var(--accent-line);border-radius:var(--r-xl);box-shadow:var(--shadow-card);
+  background:radial-gradient(130% 150% at 100% 0%,var(--accent-dim),transparent 58%),var(--surface)}
+.al-copy{padding:clamp(26px,4vw,44px)}
+.al-eyebrow{display:inline-flex;align-items:center;gap:8px;color:var(--accent);
+  font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase}
+.al-eyebrow .icon{width:15px;height:15px;stroke-width:2}
+.al-copy h2{font-size:clamp(1.85rem,3.4vw,2.6rem);font-weight:700;letter-spacing:-.035em;line-height:1.04;margin-top:14px;text-wrap:balance}
+.al-lead{color:var(--text-2);margin-top:14px;max-width:46ch;font-size:clamp(1rem,1.5vw,1.12rem)}
+.al-fine{display:flex;gap:9px;align-items:flex-start;margin-top:16px;font-size:12.5px;color:var(--text-3);max-width:48ch}
+.al-fine .icon{width:15px;height:15px;flex:none;margin-top:1px}
+.al-copy .btn{margin-top:24px}
+.al-figure{padding:clamp(24px,4vw,40px);border-top:1px solid var(--border)}
+.al-figure .al-head{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:16px}
+.al-figure .al-head .ttl{font-size:12.5px;color:var(--text-3)}
+.al-figure .al-head .yld{margin-left:auto}
+.al-cap{margin-top:14px;font-size:11.5px;color:var(--text-3)}
+@media (min-width:920px){
+  .al-wrap{grid-template-columns:1.08fr .92fr}
+  .al-figure{border-top:0;border-left:1px solid var(--border)}
+}
+
 /* ============================================================ reveal / motion */
 @media (prefers-reduced-motion:no-preference){
   .reveal{opacity:0;transform:translateY(18px);transition:opacity .6s ease,transform .6s cubic-bezier(.2,.7,.2,1)}
@@ -514,9 +541,10 @@ input[type=range]:focus-visible::-moz-range-thumb{box-shadow:var(--ring)}
 @media (min-width:760px){
   .bento{grid-template-columns:repeat(6,1fr)}
   .bento .tile-a{grid-column:span 6}
-  .bento .tile-b,.bento .tile-c{grid-column:span 3}
-  .bento .tile-d{grid-column:span 4}
-  .bento .tile-e{grid-column:span 2}
+  .bento .tile-b{grid-column:span 3}
+  .bento .tile-d{grid-column:span 3}
+  .bento .tile-e{grid-column:span 6}
+  .tile-e .trust-list{display:flex;flex-wrap:wrap;gap:12px 28px}
 }
 @media (min-width:1000px){
   .bento .tile-a{grid-column:span 3;grid-row:span 2}
@@ -684,12 +712,13 @@ input[type=range]:focus-visible::-moz-range-thumb{box-shadow:var(--ring)}
         <div class="reveal">
           <span class="eyebrow">Scored this week</span>
           <h2 style="margin-top:10px">Top deals in Porto</h2>
-          <p>Every home ranked 0–100 on price, yield, condition, metro access and short-let potential. Three of this week's strongest.</p>
+          <p>Every home ranked 0–100 — scored as an investment <span class="amp">&amp;</span> a place to live. Three of this week's strongest.</p>
         </div>
         <div class="right reveal d1">
-          <div class="filter-chips" role="group" aria-label="Filter by city">
+          <div class="filter-chips" role="group" aria-label="Filter deals">
             <button aria-pressed="false">Lisbon</button>
             <button aria-pressed="true">Porto</button>
+            <button class="alf" id="alFilter" aria-pressed="false"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="9" r="4.2"/><path d="M11 12l8 8M16.5 17.5l2-2M19 20l2-2"/></svg>AL-licensed</button>
           </div>
           <a class="link-arrow" href="#">View all deals
             <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg>
@@ -790,7 +819,7 @@ input[type=range]:focus-visible::-moz-range-thumb{box-shadow:var(--ring)}
               <span class="score-label"><span class="t">Deal score</span><span class="d mid">Strong</span></span>
             </div>
             <div class="media-tr">
-              <span class="chip chip-al" title="Short-let (Alojamento Local) licence">AL · short-let</span>
+              <span class="chip chip-al" title="Short-let (Alojamento Local) licence"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="9" r="4.2"/><path d="M11 12l8 8M16.5 17.5l2-2M19 20l2-2"/></svg>AL · short-let</span>
             </div>
           </div>
           <div class="card-body">
@@ -882,17 +911,6 @@ input[type=range]:focus-visible::-moz-range-thumb{box-shadow:var(--ring)}
           </div>
         </article>
 
-        <!-- C — short-let AL income -->
-        <article class="tile tile-c reveal d2">
-          <div class="ic"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="9" r="4.2"/><path d="M11 12l8 8M16.5 17.5l2-2M19 20l2-2"/></svg></div>
-          <h3>Short-let income, licensed</h3>
-          <p class="tdesc">We flag homes that carry an <span class="chip chip-al" title="Alojamento Local — short-let licence">AL</span> short-let licence and estimate the income uplift.</p>
-          <div class="cmp">
-            <div class="crow long"><div class="clab"><span>Long-let</span><b>€820/mo</b></div><div class="cbar"><i style="width:62%"></i></div></div>
-            <div class="crow short"><div class="clab"><span>Short-let (AL)</span><b>€1,180/mo</b></div><div class="cbar"><i style="width:100%"></i></div></div>
-          </div>
-        </article>
-
         <!-- D — neighbourhood scoring -->
         <article class="tile tile-d reveal">
           <div class="ic"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="2.6"/></svg></div>
@@ -920,6 +938,35 @@ input[type=range]:focus-visible::-moz-range-thumb{box-shadow:var(--ring)}
             <li><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>AI-analysed, human-checked</li>
           </ul>
         </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ FLAGSHIP: AL SHORT-LET ============================ -->
+  <section class="al-sec" id="al" aria-labelledby="al-h">
+    <div class="container">
+      <div class="al-wrap reveal">
+        <div class="al-copy">
+          <span class="al-eyebrow"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="9" r="4.2"/><path d="M11 12l8 8M16.5 17.5l2-2M19 20l2-2"/></svg>Flagship · Short-let ready</span>
+          <h2 id="al-h">AL licence <span class="em">already in place</span></h2>
+          <p class="al-lead">New AL licences are restricted in Portugal — an existing licence is rare. Short-term rental is already permitted, at a higher yield.</p>
+          <p class="al-fine"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 8h.01"/></svg>Licence already in place — short-let permitted now. Verify transfer terms with a local agent.</p>
+          <a class="btn btn-accent" id="alCta" href="#deals">See AL-licensed homes
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg>
+          </a>
+        </div>
+        <div class="al-figure">
+          <div class="al-head">
+            <span class="chip chip-al"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="9" r="4.2"/><path d="M11 12l8 8M16.5 17.5l2-2M19 20l2-2"/></svg>AL detected</span>
+            <span class="ttl">T0 · Santo Ildefonso · monthly</span>
+            <span class="chip chip-pos yld">+44% income</span>
+          </div>
+          <div class="cmp">
+            <div class="crow long"><div class="clab"><span>Long-let</span><b>€820/mo</b></div><div class="cbar"><i style="width:62%"></i></div></div>
+            <div class="crow short"><div class="clab"><span>Short-let (AL)</span><b>€1,180/mo</b></div><div class="cbar"><i style="width:100%"></i></div></div>
+          </div>
+          <p class="al-cap">Illustrative — short-let shown net of costs; we estimate income per listing from area data.</p>
+        </div>
       </div>
     </div>
   </section>
@@ -1187,6 +1234,15 @@ input[type=range]:focus-visible::-moz-range-thumb{box-shadow:var(--ring)}
       if(!validEmail()){ ffEmail.classList.add('invalid'); emailF.focus(); return; }
       document.getElementById('leadWrap').classList.add('is-sent');
       var done=document.querySelector('.form-done'); if(done) done.focus();
+    });
+  }
+
+  /* flagship CTA -> highlight the AL-licensed filter in deals */
+  var alCta=document.getElementById('alCta'), alFilter=document.getElementById('alFilter');
+  if(alCta && alFilter){
+    alCta.addEventListener('click', function(){
+      document.querySelectorAll('.filter-chips button').forEach(function(b){ b.setAttribute('aria-pressed','false'); });
+      alFilter.setAttribute('aria-pressed','true');
     });
   }
 })();
