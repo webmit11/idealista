@@ -2,6 +2,7 @@
 import base64
 import hashlib
 import hmac
+import html
 import json
 import logging
 import secrets
@@ -533,6 +534,36 @@ def mini_app_me(
     return st
 
 
+def _notify_owner_lead(session: Session, lead: Lead, user: dict) -> None:
+    """Push a fresh lead's contact to the owner's Telegram (best-effort, once)."""
+    owner = settings.telegram_owner_id
+    if not owner:
+        return
+    try:
+        prop = session.get(Property, lead.property_id) if lead.property_id else None
+        uname = user.get("username")
+        lines = [
+            "🔔 <b>Новый лид</b>",
+            f"Имя: <b>{html.escape(lead.name or '—')}</b>",
+            f"Телефон: <b>{html.escape(lead.phone or '—')}</b>",
+        ]
+        if lead.country:
+            lines.append(f"Страна: {html.escape(lead.country)}")
+        if uname:
+            lines.append(f"Telegram: @{html.escape(uname)}")
+        if prop:
+            price = f"{prop.price:,.0f} €".replace(",", " ") if prop.price else ""
+            title = html.escape((prop.title or f"#{prop.id}")[:80])
+            lines.append(f"Объект: {title}{' · ' + price if price else ''}")
+        markup = None
+        if prop and settings.public_base_url:
+            url = f"{settings.public_base_url.rstrip('/')}/app?p={prop.id}"
+            markup = {"inline_keyboard": [[{"text": "Открыть объект", "web_app": {"url": url}}]]}
+        telegram_api.send_message(owner, "\n".join(lines), reply_markup=markup)
+    except Exception:
+        logger.exception("owner lead notification failed")
+
+
 @app.post("/app/api/lead")
 async def mini_app_lead(
     request: Request,
@@ -550,6 +581,7 @@ async def mini_app_lead(
     pid = int(pid) if isinstance(pid, int) or (isinstance(pid, str) and pid.isdigit()) else None
     country = geoip.country_for_ip(geoip.client_ip(request))
     lead = session.exec(select(Lead).where(Lead.telegram_id == uid)).first()
+    had_phone = bool(lead and lead.phone)
     if lead:
         if phone:
             lead.phone = phone
@@ -563,6 +595,8 @@ async def mini_app_lead(
         lead = Lead(telegram_id=uid, name=name, phone=phone or None, country=country, property_id=pid)
     session.add(lead)
     session.commit()
+    if phone and not had_phone:  # notify the owner only when a phone is first captured
+        _notify_owner_lead(session, lead, user)
     return {"ok": True}
 
 
