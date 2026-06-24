@@ -643,11 +643,17 @@
     }).join('');
     box.scrollTop = box.scrollHeight;
   }
+  function renderChatChips(id) {
+    const el = $('chatChips'); if (!el) return;
+    const asked = new Set(chatLog.filter(m => m.role === 'user').map(m => (m.content || '').trim()));
+    el.innerHTML = CHAT_QS.filter(q => !asked.has(q))
+      .map(q => `<button class="chip" data-q="${q}" onclick="sendChat(${id}, this.dataset.q)">${q}</button>`).join('');
+  }
   function renderChatInput(id) {
     const area = $('chatArea'); if (!area) return;
     area.innerHTML = `<div id="chatChips" style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px;"></div>
       <div style="display:flex; gap:6px;"><input id="chatInput" placeholder="Ваш вопрос…" style="flex:1; padding:9px 11px; border-radius:10px; border:1px solid rgba(255,255,255,.12); background:rgba(255,255,255,.04); color:#e6e8ee; font-size:14px;"><button class="reset" style="width:auto; padding:0 16px; margin-top:0;" onclick="sendChat(${id})">→</button></div>`;
-    $('chatChips').innerHTML = CHAT_QS.map(q => `<button class="chip" data-q="${q}" onclick="sendChat(${id}, this.dataset.q)">${q}</button>`).join('');
+    renderChatChips(id);
     const inp = $('chatInput'); if (inp) inp.onkeydown = e => { if (e.key === 'Enter') sendChat(id); };
   }
   async function saveLead(id) {
@@ -681,6 +687,7 @@
     if (!text) return;
     if (inp) inp.value = '';
     chatLog.push({ role: 'user', content: text });
+    renderChatChips(id);
     const t1 = { typing: true }; chatLog.push(t1); renderChat();
     let res = null;
     try { res = await apiSend('/app/api/property/' + id + '/chat', 'POST', { messages: chatLog.filter(m => !m.typing).map(m => ({ role: m.role, content: m.content })) }); } catch (e) {}
