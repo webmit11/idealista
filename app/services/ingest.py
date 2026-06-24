@@ -213,11 +213,13 @@ def _notify_saved_filters(session: Session, created_ids: list[int], dropped_ids:
 
 
 def _cache_thumbnails(session: Session) -> int:
-    """Best-effort: cache freshly-scraped thumbnails before their signed URLs expire."""
+    """Best-effort: cache freshly-scraped thumbnails, then purge delisted ones from cache."""
     try:
         from app.services import thumbs  # lazy import
 
-        return thumbs.cache_missing(session)
+        cached = thumbs.cache_missing(session)
+        thumbs.cleanup_inactive(session)
+        return cached
     except Exception:
         logger.exception("thumbnail caching failed")
         return 0

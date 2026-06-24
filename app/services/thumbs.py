@@ -112,3 +112,48 @@ def cache_missing(session, limit: int = 200000) -> int:
                 done += 1
     logger.info("thumbs: cached %s images (%s tasks)", done, len(tasks))
     return done
+
+
+def cleanup_inactive(session) -> int:
+    """Delete cached images of listings long delisted or gone, to bound disk use.
+
+    Keeps active listings and recently-delisted ones (they often reappear).
+    """
+    import re
+    from datetime import datetime, timedelta
+
+    from sqlmodel import select
+
+    from app.db.models import Property
+
+    cache_dir = settings.thumb_cache_dir
+    if not os.path.isdir(cache_dir):
+        return 0
+    files_by_id = {}
+    for fn in os.listdir(cache_dir):
+        m = re.match(r"^(\d+)(?:_\d+)?\.jpg$", fn)
+        if m:
+            files_by_id.setdefault(int(m.group(1)), []).append(fn)
+    if not files_by_id:
+        return 0
+    cutoff = datetime.utcnow() - timedelta(days=settings.thumb_cache_keep_days)
+    keep = set(
+        session.exec(
+            select(Property.id).where(
+                (Property.is_active == True) | (Property.delisted_at >= cutoff)  # noqa: E712
+            )
+        ).all()
+    )
+    removed = 0
+    for pid, files in files_by_id.items():
+        if pid in keep:
+            continue
+        for fn in files:
+            try:
+                os.remove(os.path.join(cache_dir, fn))
+                removed += 1
+            except OSError:
+                pass
+    if removed:
+        logger.info("thumbs: purged %s cached files (delisted/orphan listings)", removed)
+    return removed

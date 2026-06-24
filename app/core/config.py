@@ -174,6 +174,7 @@ class Settings(BaseSettings):
     thumb_cache_dir: str = "data/thumbs"
     gallery_cache_max: int = 30      # max gallery photos cached per listing
     min_free_disk_mb: int = 600      # stop caching images below this free space (safety)
+    thumb_cache_keep_days: int = 30  # purge cached images of listings delisted longer ago
 
     # --- Paths ---
     mock_data_path: str = "sample_data/properties_mock.json"
