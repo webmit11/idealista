@@ -202,13 +202,15 @@ button,input,select{font:inherit;color:inherit}
 .h1{
   font-size:clamp(2.5rem,6.2vw,4.4rem);
   line-height:1.0;font-weight:700;letter-spacing:-.042em;
-  text-wrap:balance;margin-bottom:20px;
+  text-wrap:balance;margin-bottom:14px;
 }
 .h1 .em{
   background:linear-gradient(95deg,var(--accent-strong),var(--accent));
   -webkit-background-clip:text;background-clip:text;color:transparent;
 }
 .lead{font-size:clamp(1.02rem,1.6vw,1.18rem);color:var(--text-2);max-width:40ch;margin-bottom:30px;text-wrap:pretty}
+.hero-pitch{font-size:clamp(1.06rem,1.6vw,1.24rem);font-weight:600;letter-spacing:-.016em;color:var(--text);max-width:34ch;margin-bottom:16px;text-wrap:balance}
+.amp{color:var(--accent);font-weight:700;padding:0 1px}
 
 /* search panel */
 .search{
@@ -235,7 +237,7 @@ button,input,select{font:inherit;color:inherit}
   font-size:14px;font-weight:600;color:var(--text-2);cursor:pointer;transition:all .15s}
 .segment input:checked+span{background:var(--bg-elev);color:var(--text);box-shadow:0 2px 8px -4px rgba(0,0,0,.5)}
 .segment input:focus-visible+span{box-shadow:var(--ring)}
-.search .btn{width:100%;height:50px;margin-top:2px}
+.search .btn{width:100%;height:50px;margin-top:8px}
 
 .stat-strip{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;margin-top:26px;
   background:var(--border);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden}
@@ -486,6 +488,7 @@ input[type=range]:focus-visible::-moz-range-thumb{box-shadow:var(--ring)}
 /* ============================================================ responsive */
 @media (min-width:560px){
   .search-row.two{grid-template-columns:1fr 1fr}
+  .search-row.three{grid-template-columns:repeat(3,1fr)}
   .stat-strip{grid-template-columns:repeat(4,1fr)}
 }
 @media (min-width:720px){
@@ -579,10 +582,11 @@ input[type=range]:focus-visible::-moz-range-thumb{box-shadow:var(--ring)}
             <span><b>Lisbon &amp; Porto</b> · refreshed daily</span>
           </div>
           <h1 class="h1 reveal d1">Under-priced homes in Lisbon&nbsp;&amp;&nbsp;Porto, <span class="em">scored 0–100</span>.</h1>
+          <p class="hero-pitch reveal d1">A smart investment <span class="amp">&amp;</span> a place to live — every listing scored as both.</p>
           <p class="lead reveal d2">Real yields, price-vs-market and metro distance on every listing — so you see the deal, not the listing. Expanding across Southern Europe.</p>
 
           <form class="search reveal d2" id="searchForm" aria-label="Search properties">
-            <div class="search-row two">
+            <div class="search-row three">
               <div class="field">
                 <label for="f-country">Country</label>
                 <div class="sel">
@@ -604,8 +608,6 @@ input[type=range]:focus-visible::-moz-range-thumb{box-shadow:var(--ring)}
                   <svg class="icon caret" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
                 </div>
               </div>
-            </div>
-            <div class="search-row two" style="margin-top:8px">
               <div class="field">
                 <label for="f-budget">Budget</label>
                 <div class="sel">
@@ -617,13 +619,6 @@ input[type=range]:focus-visible::-moz-range-thumb{box-shadow:var(--ring)}
                     <option>€400k+</option>
                   </select>
                   <svg class="icon caret" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
-                </div>
-              </div>
-              <div class="field" style="justify-content:center">
-                <label id="goal-lbl">Goal</label>
-                <div class="segment" role="radiogroup" aria-labelledby="goal-lbl">
-                  <label><input type="radio" name="goal" checked><span>Invest</span></label>
-                  <label><input type="radio" name="goal"><span>Live</span></label>
                 </div>
               </div>
             </div>
@@ -836,7 +831,7 @@ input[type=range]:focus-visible::-moz-range-thumb{box-shadow:var(--ring)}
         <div class="reveal">
           <span class="eyebrow">Why Yendari</span>
           <h2 id="why-h" style="margin-top:10px">The data behind every shortlist</h2>
-          <p>Not another listings portal. Four signals turn thousands of ads into a ranked shortlist you can trust.</p>
+          <p>Not another listings portal — and not a bare yield calculator. Every home is scored as an investment <span class="amp">&amp;</span> a place to live, so the strongest deals rise to the top.</p>
         </div>
       </div>
 
@@ -979,10 +974,11 @@ input[type=range]:focus-visible::-moz-range-thumb{box-shadow:var(--ring)}
             </div>
 
             <div class="lf-field" style="margin-top:14px">
-              <label id="le-goal-l">Goal</label>
+              <label id="le-goal-l">I'm buying to</label>
               <div class="segment" role="radiogroup" aria-labelledby="le-goal-l">
-                <label><input type="radio" name="le-goal" checked><span>Invest</span></label>
-                <label><input type="radio" name="le-goal"><span>Live</span></label>
+                <label><input type="radio" name="le-goal" value="invest"><span>Invest</span></label>
+                <label><input type="radio" name="le-goal" value="live"><span>Live in</span></label>
+                <label><input type="radio" name="le-goal" value="both" checked><span>Both</span></label>
               </div>
             </div>
 
