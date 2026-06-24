@@ -155,6 +155,10 @@ class Settings(BaseSettings):
     scheduler_provider: str = "mock"  # "mock" | "apify"
     daily_import_hour: int = 6
     daily_import_minute: int = 0
+    # The cron fires daily at the hour above, but the apify refresh actually runs at
+    # most once per this many days (throttled by the last run's timestamp) — real
+    # estate changes slowly, so a wider interval cuts scraping cost. 1 = every day.
+    import_interval_days: int = 1
 
     # --- Paths ---
     mock_data_path: str = "sample_data/properties_mock.json"

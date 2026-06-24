@@ -1,5 +1,6 @@
 """APScheduler-based daily import scheduler."""
 import logging
+from datetime import datetime, timedelta
 from typing import Optional
 
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -27,8 +28,19 @@ def _job() -> None:
         else:
             # Full multi-area refresh, recorded in refresh_runs (shares the
             # once-per-day limit with the manual button).
-            from app.services.refresh_service import run_now_recorded
+            from app.services.refresh_service import latest_run, run_now_recorded
 
+            if settings.import_interval_days > 1:
+                with Session(engine) as session:
+                    last = latest_run(session)
+                if last and (datetime.utcnow() - last.started_at) < (
+                    timedelta(days=settings.import_interval_days) - timedelta(hours=12)
+                ):
+                    logger.info(
+                        "scheduled import skipped — interval not elapsed",
+                        extra={"extra_fields": {"interval_days": settings.import_interval_days}},
+                    )
+                    return
             run_now_recorded()
     except Exception:
         logger.exception("scheduled import failed")
