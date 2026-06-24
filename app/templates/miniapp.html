@@ -489,15 +489,15 @@
 
   // ---- filters ----
   function readFilters() {
-    const f = {};
-    const v = (id) => $(id).value.trim();
-    if (v('f_min_score')) f.min_score = v('f_min_score');
-    if (v('f_max_price')) f.max_price = v('f_max_price');
-    if (v('f_typology')) f.typology = v('f_typology');
-    if (v('f_municipality')) f.municipality = v('f_municipality');
-    if (v('f_max_dist')) f.max_distance_to_metro = v('f_max_dist');
-    if (v('f_min_yield')) f.min_gross_yield = v('f_min_yield');
-    TOGGLES.forEach(([k]) => { if ($('t_' + k).checked) f[k] = 'true'; });
+    const f = Object.assign({}, state.filters);  // keep filters with no form field (e.g. parish/район)
+    const setv = (k, id) => { const val = $(id).value.trim(); if (val) f[k] = val; else delete f[k]; };
+    setv('min_score', 'f_min_score');
+    setv('max_price', 'f_max_price');
+    setv('typology', 'f_typology');
+    setv('municipality', 'f_municipality');
+    setv('max_distance_to_metro', 'f_max_dist');
+    setv('min_gross_yield', 'f_min_yield');
+    TOGGLES.forEach(([k]) => { if ($('t_' + k).checked) f[k] = 'true'; else delete f[k]; });
     state.sort = $('f_sort').value;
     state.filters = f;
   }
@@ -601,11 +601,13 @@
   }
   function openArea(el) {
     $('areasSheet').classList.remove('open');
-    resetFilters();
     const p = el.dataset.p, m = el.dataset.m;
-    const base = p ? { parish: p } : (m ? { municipality: m } : {});
-    state.filters = Object.assign(base, { min_score: '0' });  // show ALL listings in the area
-    state.sort = 'score_desc';
+    delete state.filters.parish;       // replace only the area, keep other active filters
+    delete state.filters.municipality;
+    if (p) { state.filters.parish = p; if ($('f_municipality')) $('f_municipality').value = ''; }
+    else if (m) { state.filters.municipality = m; if ($('f_municipality')) $('f_municipality').value = m; }
+    state.filters.min_score = '0';                       // show all listings in the area
+    if ($('f_min_score')) $('f_min_score').value = '0';  // keep form in sync (0 = hidden chip)
     state.tab = 'top';
     document.querySelectorAll('.cat').forEach(x => x.classList.toggle('active', x.dataset.id === 'top'));
     loadList(true);
