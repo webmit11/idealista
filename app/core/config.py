@@ -169,9 +169,11 @@ class Settings(BaseSettings):
     geoip_db_path: str = "data/GeoLite2-Country.mmdb"
     geoip_edition: str = "GeoLite2-Country"
 
-    # Idealista image URLs are signed and expire in ~24h; cache thumbnails on the
-    # mounted ./data volume and serve them from our domain so they never go blank.
+    # Idealista image URLs are signed and expire in ~24h; cache thumbnails + gallery
+    # on the mounted ./data volume and serve them from our domain so they never go blank.
     thumb_cache_dir: str = "data/thumbs"
+    gallery_cache_max: int = 30      # max gallery photos cached per listing
+    min_free_disk_mb: int = 600      # stop caching images below this free space (safety)
 
     # --- Paths ---
     mock_data_path: str = "sample_data/properties_mock.json"

@@ -38,7 +38,8 @@
 <div class="panel" style="margin-bottom:16px;">
   <div class="gallery">
     {% if p.thumbnail_url %}<img loading="lazy" src="/img/{{ p.id }}" alt="" onerror="this.onerror=null;this.src='/static/logo.png'">{% endif %}
-    {% for img in p.image_urls[1:] %}<img loading="lazy" src="{{ img }}" alt="" onerror="this.onerror=null;this.src='/static/logo.png'">{% endfor %}
+    {% set start = 1 if p.thumbnail_url else 0 %}
+    {% for i in range(start, (p.image_urls|length) if p.image_urls else 0) %}<img loading="lazy" src="/img/{{ p.id }}/{{ i }}" alt="" onerror="this.onerror=null;this.src='/static/logo.png'">{% endfor %}
   </div>
 </div>
 {% endif %}

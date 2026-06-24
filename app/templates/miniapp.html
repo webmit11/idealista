@@ -333,7 +333,10 @@
   function renderDetail(d) {
     const r = d.property, ex = d.explain, iv = d.invest;
     $('detailTitle').textContent = r.typology || 'Объект';
-    const galImgs = (r.thumb ? [r.thumb] : []).concat((r.image_urls || []).slice(r.thumb ? 1 : 0));
+    const nImg = (r.image_urls || []).length;
+    const galImgs = [];
+    if (r.thumb) { galImgs.push(r.thumb); for (let i = 1; i < nImg; i++) galImgs.push(`/img/${r.id}/${i}`); }
+    else { for (let i = 0; i < nImg; i++) galImgs.push(`/img/${r.id}/${i}`); }
     const gal = galImgs.length
       ? `<div class="gal">${galImgs.map(u => `<img src="${u}" onerror="this.onerror=null;this.src='/static/logo.png'">`).join('')}</div>` : '';
     const yn = v => v ? 'да' : '—';

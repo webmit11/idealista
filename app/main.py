@@ -167,6 +167,25 @@ def listing_image(property_id: int, session: Session = Depends(get_session)):
     return RedirectResponse(url="/static/logo.png", status_code=302)
 
 
+@app.get("/img/{property_id}/{n}")
+def listing_gallery_image(property_id: int, n: int, session: Session = Depends(get_session)):
+    """Serve a cached gallery image (image n of the listing); same fallback as /img."""
+    if n < 0 or n >= 50:
+        raise HTTPException(status_code=404, detail="out of range")
+    if not thumbs.is_gallery_cached(property_id, n):
+        prop = session.get(Property, property_id)
+        urls = prop.image_urls if prop else None
+        if urls and n < len(urls):
+            thumbs.download_gallery(property_id, n, urls[n])
+    if thumbs.is_gallery_cached(property_id, n):
+        return FileResponse(
+            thumbs.gallery_path_for(property_id, n),
+            media_type="image/jpeg",
+            headers={"Cache-Control": "public, max-age=604800"},
+        )
+    return RedirectResponse(url="/static/logo.png", status_code=302)
+
+
 @app.get("/app", response_class=HTMLResponse)
 def mini_app(request: Request):
     """Telegram Mini App shell (data is fetched via /app/api with initData auth)."""
