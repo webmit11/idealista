@@ -291,7 +291,7 @@
     const yc = yColor(yv);
     const dist = r.distance_to_metro_m != null ? fmt(r.distance_to_metro_m) + ' м' : '—';
     const walk = r.walking_minutes_to_metro_estimate != null ? ' · ' + r.walking_minutes_to_metro_estimate + ' мин' : '';
-    const drop = r.price_drop_percent ? ` · 🔻${f1(r.price_drop_percent)}%` : '';
+    const drop = (r.price_drop_percent > 0) ? ` · 🔻${f1(r.price_drop_percent)}%` : '';
     const ws = r.watch_status && wmap[r.watch_status]
       ? ` <span class="badge" style="background:${wmap[r.watch_status].color}">${wmap[r.watch_status].label}</span>` : '';
     const al = r.has_al_license ? ` <span class="badge" style="background:#7a4ddb">🏷 AL</span>` : '';
@@ -434,9 +434,9 @@
       </div>`;
     }
     let dropHtml = '';
-    if (r.price_drop_percent) {
+    if (r.price_drop_percent > 0) {
       const when = r.price_dropped_at ? new Date(r.price_dropped_at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' }) : '';
-      dropHtml = `<div class="panel" style="background:#3a2326;"><div style="color:#ffb4ac; font-weight:600; font-size:15px;">🔻 Цена снижена на ${f1(r.price_drop_percent)}%${r.price_drop_amount ? ' (−' + eur(r.price_drop_amount) + ')' : ''}</div><div class="meta" style="margin-top:4px; color:#e8b4b0;">было ${eur(r.previous_price)} → стало ${eur(r.price)}${when ? ' · зафиксировано ' + when : ''}</div></div>`;
+      dropHtml = `<div class="panel" style="background:#3a2326;"><div style="color:#ffb4ac; font-weight:600; font-size:15px;">🔻 Цена снижена на ${f1(r.price_drop_percent)}%${r.price_drop_amount ? ' (−' + eur(Math.abs(r.price_drop_amount)) + ')' : ''}</div><div class="meta" style="margin-top:4px; color:#e8b4b0;">было ${eur(r.previous_price)} → стало ${eur(r.price)}${when ? ' · зафиксировано ' + when : ''}</div></div>`;
     }
     const url = idealistaUrl(r);
     const open = url ? `<a class="open-btn" href="#" onclick="tg.openLink('${url}');return false;">Открыть на Idealista →</a>` : '';

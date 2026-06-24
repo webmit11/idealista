@@ -137,7 +137,7 @@
       <td class="num"{% if not r.exact_location %} title="Точный адрес скрыт — координаты приблизительные"{% endif %}>{% if r.distance_to_metro_m is not none %}{{ '≈' if not r.exact_location }}{{ '%.0f'|format(r.distance_to_metro_m) }}{% else %}—{% endif %}</td>
       <td class="num">{{ '%.0f'|format(r.rental_estimate_mid) if r.rental_estimate_mid else '—' }} €</td>
       <td class="num">{{ '%.1f'|format(r.gross_yield_percent) if r.gross_yield_percent is not none else '—' }}%</td>
-      <td class="num">{% if r.price_drop_percent %}<span class="drop">-{{ '%.1f'|format(r.price_drop_percent) }}%</span>{% else %}—{% endif %}</td>
+      <td class="num">{% if r.price_drop_percent and r.price_drop_percent > 0 %}<span class="drop">-{{ '%.1f'|format(r.price_drop_percent) }}%</span>{% else %}—{% endif %}</td>
       <td>{{ yn(r.has_garage) }}</td>
       <td>{{ yn(r.has_elevator) }}</td>
       <td>{% for f in (r.bonus_flags or []) %}<span class="bonus">{{ f }}</span>{% endfor %}{% for f in (r.risk_flags or []) %}<span class="flag">{{ f }}</span>{% endfor %}</td>
