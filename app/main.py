@@ -6,6 +6,7 @@ import html
 import json
 import logging
 import secrets
+import time
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from math import ceil
@@ -77,9 +78,21 @@ def _overlay_owner_watch(session, rows: list) -> None:
         r["watch_note"] = w.note if w else None
 
 
+def _assert_safe_exposure() -> None:
+    """Fail fast instead of serving the dashboard open to the internet: a set
+    public_base_url means we're internet-facing, and an empty dashboard_password
+    disables Basic auth for the whole dashboard + JSON API."""
+    if settings.public_base_url and not settings.dashboard_password:
+        raise RuntimeError(
+            "public_base_url is set but dashboard_password is empty — the dashboard "
+            "and JSON API would be served without authentication. Set DASHBOARD_PASSWORD."
+        )
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     setup_logging()
+    _assert_safe_exposure()
     if settings.auto_create_tables:
         init_db()
     try:
@@ -397,6 +410,23 @@ def _set_al_override(session: Session, prop: Property, value: str) -> None:
     session.commit()
 
 
+# Per-user sliding-window rate limit for the LLM chat (in-process; single app worker).
+_chat_hits = {}
+
+
+def _check_chat_rate_limit(user_id: int) -> None:
+    """Cap chat messages/minute per user so a trial account can't burn LLM credits."""
+    limit = settings.chat_rate_limit_per_min
+    if limit <= 0:
+        return
+    now = time.monotonic()
+    hits = [t for t in _chat_hits.get(user_id, []) if now - t < 60.0]
+    if len(hits) >= limit:
+        raise HTTPException(status_code=429, detail="Слишком много сообщений, подождите минуту")
+    hits.append(now)
+    _chat_hits[user_id] = hits
+
+
 @app.post("/app/api/property/{property_id}/chat")
 async def mini_app_property_chat(
     property_id: int,
@@ -404,6 +434,7 @@ async def mini_app_property_chat(
     session: Session = Depends(get_session),
     user: dict = Depends(require_subscriber),
 ):
+    _check_chat_rate_limit(int(user["id"]))
     prop = session.get(Property, property_id)
     if not prop:
         raise HTTPException(status_code=404, detail="Property not found")

@@ -4,11 +4,11 @@
 Packages the project, uploads it over SSH, and rebuilds the prod stack.
 
 Usage (from the project root):
-    SRV_PASS='<root password>' .venv/bin/python deploy/redeploy.py
-    # optional: SRV_HOST=1.2.3.4  SRV_USER=root  REMOTE_DIR=/opt/idealista
+    .venv/bin/python deploy/redeploy.py
+    # optional: SRV_HOST=1.2.3.4  SRV_USER=deploy  REMOTE_DIR=/opt/idealista
 
-Requires `paramiko` (already in .venv).
-Tip: set up SSH keys to avoid passing the password each time.
+Auth is key-based: SRV_USER must accept your SSH key. Run `ssh SRV_USER@SRV_HOST`
+once first so the host key lands in ~/.ssh/known_hosts. Requires `paramiko`.
 """
 import os
 import subprocess
@@ -17,8 +17,7 @@ import sys
 import paramiko
 
 HOST = os.environ.get("SRV_HOST", "132.243.221.142")
-USER = os.environ.get("SRV_USER", "root")
-PASSWORD = os.environ.get("SRV_PASS")
+USER = os.environ.get("SRV_USER", "deploy")
 REMOTE_DIR = os.environ.get("REMOTE_DIR", "/opt/idealista")
 ARCHIVE = "/tmp/idealista_deploy.tar.gz"
 EXCLUDES = [".venv", ".git", "__pycache__", ".pytest_cache", "*.db",
@@ -26,12 +25,8 @@ EXCLUDES = [".venv", ".git", "__pycache__", ".pytest_cache", "*.db",
 
 
 def main() -> int:
-    if not PASSWORD:
-        print("Set SRV_PASS (root password) in the environment.")
-        return 2
-
     print("· packaging project…")
-    tar = ["tar", "--disable-copyfile", "-czf", ARCHIVE]
+    tar = ["tar", "--disable-copyfile", "--no-xattrs", "-czf", ARCHIVE]
     for e in EXCLUDES:
         tar += ["--exclude", e]
     tar += ["app", "deploy", "sample_data", "migrations", "requirements.txt",
@@ -40,8 +35,9 @@ def main() -> int:
     subprocess.run(tar, check=True, stderr=subprocess.DEVNULL)
 
     c = paramiko.SSHClient()
-    c.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    c.connect(HOST, username=USER, password=PASSWORD, timeout=30)
+    c.load_system_host_keys()
+    c.set_missing_host_key_policy(paramiko.RejectPolicy())
+    c.connect(HOST, username=USER, timeout=30)
 
     def run(cmd, tmo=900):
         ch = c.get_transport().open_session(); ch.settimeout(tmo); ch.exec_command(cmd)
