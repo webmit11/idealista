@@ -284,7 +284,9 @@
   }
 
   function card(r) {
-    const img = r.thumbnail_url ? `<img src="${r.thumbnail_url}" alt="">` : '<img alt="">';
+    const img = r.thumb
+      ? `<img src="${r.thumb}" alt="" onerror="this.onerror=null;this.src='/static/logo.png'">`
+      : `<img src="/static/logo.png" alt="">`;
     const isAL = r.has_al_license && r.al_gross_yield != null;
     const yv = isAL ? r.al_gross_yield : r.gross_yield_percent;
     const yld = yv != null ? f1(yv) + '%' : '—';
@@ -331,8 +333,9 @@
   function renderDetail(d) {
     const r = d.property, ex = d.explain, iv = d.invest;
     $('detailTitle').textContent = r.typology || 'Объект';
-    const gal = (r.image_urls && r.image_urls.length)
-      ? `<div class="gal">${r.image_urls.map(u => `<img src="${u}">`).join('')}</div>` : '';
+    const galImgs = (r.thumb ? [r.thumb] : []).concat((r.image_urls || []).slice(r.thumb ? 1 : 0));
+    const gal = galImgs.length
+      ? `<div class="gal">${galImgs.map(u => `<img src="${u}" onerror="this.onerror=null;this.src='/static/logo.png'">`).join('')}</div>` : '';
     const yn = v => v ? 'да' : '—';
     const facts = `<div class="panel"><div class="kv">
       <div><span class="k">Цена:</span> <b>${eur(r.price)}</b></div>

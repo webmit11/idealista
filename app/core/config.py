@@ -169,6 +169,10 @@ class Settings(BaseSettings):
     geoip_db_path: str = "data/GeoLite2-Country.mmdb"
     geoip_edition: str = "GeoLite2-Country"
 
+    # Idealista image URLs are signed and expire in ~24h; cache thumbnails on the
+    # mounted ./data volume and serve them from our domain so they never go blank.
+    thumb_cache_dir: str = "data/thumbs"
+
     # --- Paths ---
     mock_data_path: str = "sample_data/properties_mock.json"
     raw_data_dir: str = "data/raw"

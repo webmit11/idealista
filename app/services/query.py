@@ -254,6 +254,7 @@ def serialize(prop: Property, score: Optional[Score]) -> dict:
         "listing_agency": prop.listing_agency,
         "images_count": prop.images_count,
         "thumbnail_url": prop.thumbnail_url,
+        "thumb": f"/img/{prop.id}" if prop.thumbnail_url else None,  # cached, non-expiring
         "image_urls": prop.image_urls,
         "first_seen_at": prop.first_seen_at,
         "last_seen_at": prop.last_seen_at,

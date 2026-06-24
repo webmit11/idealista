@@ -212,6 +212,17 @@ def _notify_saved_filters(session: Session, created_ids: list[int], dropped_ids:
         return 0
 
 
+def _cache_thumbnails(session: Session) -> int:
+    """Best-effort: cache freshly-scraped thumbnails before their signed URLs expire."""
+    try:
+        from app.services import thumbs  # lazy import
+
+        return thumbs.cache_missing(session)
+    except Exception:
+        logger.exception("thumbnail caching failed")
+        return 0
+
+
 def recalculate_scores(session: Session) -> int:
     benchmarks = compute_benchmarks(session)
     props = session.exec(select(Property).where(Property.is_active == True)).all()  # noqa: E712
@@ -338,6 +349,7 @@ def run_areas_refresh(
         created_ids = []  # catch-up coverage, not genuinely new — skip New/alerts
     generate_missing_expert(session)
     scored = recalculate_scores(session)
+    _cache_thumbnails(session)
     alerted = _maybe_send_alerts(session, created_ids, dropped_ids)
     _notify_saved_filters(session, created_ids, dropped_ids)
     stats = {
@@ -392,6 +404,7 @@ def run_import(
         created_ids = []  # catch-up coverage, not genuinely new — skip New/alerts
     generate_missing_expert(session)
     scored = recalculate_scores(session)
+    _cache_thumbnails(session)
     alerted = _maybe_send_alerts(session, created_ids, dropped_ids)
     _notify_saved_filters(session, created_ids, dropped_ids)
     stats = {

@@ -34,10 +34,11 @@
 </div>
 {% endif %}
 
-{% if p.image_urls %}
+{% if p.thumbnail_url or p.image_urls %}
 <div class="panel" style="margin-bottom:16px;">
   <div class="gallery">
-    {% for img in p.image_urls %}<img loading="lazy" src="{{ img }}" alt="">{% endfor %}
+    {% if p.thumbnail_url %}<img loading="lazy" src="/img/{{ p.id }}" alt="" onerror="this.onerror=null;this.src='/static/logo.png'">{% endif %}
+    {% for img in p.image_urls[1:] %}<img loading="lazy" src="{{ img }}" alt="" onerror="this.onerror=null;this.src='/static/logo.png'">{% endfor %}
   </div>
 </div>
 {% endif %}

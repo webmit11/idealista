@@ -12,7 +12,7 @@ from typing import Optional
 from urllib.parse import urlencode
 
 from fastapi import Depends, FastAPI, Form, HTTPException, Query, Request
-from fastapi.responses import HTMLResponse, RedirectResponse, Response
+from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlmodel import Session, select
@@ -38,7 +38,7 @@ from app.services.investment import compute_investment
 from app.services.scoring import compute_score
 from app.services.refresh_service import refresh_status, trigger_refresh
 from app.services.telegram_auth import require_owner, require_subscriber, require_telegram_user
-from app.services import area_scoring, geoip, property_chat, saved_filters, subscriptions, telegram_api, user_watchlist
+from app.services import area_scoring, geoip, property_chat, saved_filters, subscriptions, telegram_api, thumbs, user_watchlist
 from app.services.watchlist import WATCH_COLORS, WATCH_LABELS, WATCH_STATUSES, normalize_status
 
 logger = logging.getLogger("app")
@@ -118,6 +118,7 @@ async def basic_auth(request: Request, call_next):
     # /app* (initData), /bot* and /tribute* (payment webhooks), /health are open.
     if (password and path != "/health" and not path.startswith("/app")
             and not path.startswith("/bot") and not path.startswith("/tribute")
+            and not path.startswith("/img")
             and not path.startswith("/static")):
         header = request.headers.get("authorization", "")
         ok = False
@@ -144,6 +145,26 @@ async def basic_auth(request: Request, call_next):
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+
+@app.get("/img/{property_id}")
+def listing_image(property_id: int, session: Session = Depends(get_session)):
+    """Serve a listing thumbnail from our cache (Idealista URLs expire in ~24h).
+
+    Cache-miss: download on the fly while the signed URL is still valid; if that
+    fails too (e.g. already expired), fall back to a neutral placeholder.
+    """
+    if not thumbs.is_cached(property_id):
+        prop = session.get(Property, property_id)
+        if prop and prop.thumbnail_url:
+            thumbs.download(property_id, prop.thumbnail_url)
+    if thumbs.is_cached(property_id):
+        return FileResponse(
+            thumbs.path_for(property_id),
+            media_type="image/jpeg",
+            headers={"Cache-Control": "public, max-age=604800"},
+        )
+    return RedirectResponse(url="/static/logo.png", status_code=302)
 
 
 @app.get("/app", response_class=HTMLResponse)
