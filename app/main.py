@@ -129,9 +129,11 @@ async def basic_auth(request: Request, call_next):
     """HTTP Basic auth for everything except /health (when a password is set)."""
     password = settings.dashboard_password
     path = request.url.path
-    # /app* (initData), /bot* and /tribute* (payment webhooks), /health are open.
+    # /home (public storefront), /app* (initData), /bot* and /tribute* (payment
+    # webhooks), /img, /static, /health are open.
     if (password and path != "/health" and not path.startswith("/app")
             and not path.startswith("/bot") and not path.startswith("/tribute")
+            and not path.startswith("/home")
             and not path.startswith("/img")
             and not path.startswith("/static")):
         header = request.headers.get("authorization", "")
@@ -159,6 +161,17 @@ async def basic_auth(request: Request, call_next):
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+
+@app.get("/home", response_class=HTMLResponse)
+def storefront(request: Request):
+    """Public English-first storefront (Yendari) — open browsing, no Telegram auth.
+
+    Distinct from the owner dashboard at `/` (Basic-auth gated) and the Telegram
+    Mini App at `/app` (initData). Allow-listed in the basic_auth middleware so it
+    stays public; assets load from /static, listing photos from /img.
+    """
+    return templates.TemplateResponse(request, "storefront.html", {"app_name": settings.app_name})
 
 
 @app.get("/img/{property_id}")
