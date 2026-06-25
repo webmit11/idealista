@@ -228,6 +228,7 @@
     function setView(on){
       dealOn=on;
       toggle.setAttribute('aria-pressed', on?'true':'false');
+      topDeal.classList.toggle('deal-view', on);
       if(on){ reveal(); } else { topDeal.classList.remove('revealed'); stage.classList.remove('scanning'); }
     }
     toggle.addEventListener('click', function(){ setView(!dealOn); });
