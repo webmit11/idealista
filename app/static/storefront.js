@@ -168,8 +168,12 @@
         fcScoreNum=document.getElementById('fcScoreNum'),
         fcPrice=document.getElementById('fcPrice'),
         fcSub=document.getElementById('fcSub'),
-        fcDelta=document.getElementById('fcDelta').querySelector('.txt'),
+        fcDeltaChip=document.getElementById('fcDelta'),
+        fcDelta=fcDeltaChip.querySelector('.txt'),
         fcAl=document.getElementById('fcAl'),
+        fcViz=document.getElementById('fcViz'),
+        fcBar=document.getElementById('fcBar'),
+        fcBarVal=document.getElementById('fcBarVal'),
         dots=Array.prototype.slice.call(topDeal.querySelectorAll('.fc-dots button')),
         idx=0, timer=null;
     function paint(d){
@@ -180,8 +184,15 @@
       fcScoreNum.textContent=d.score;
       fcPrice.textContent=d.price;
       fcSub.textContent=d.sub;
-      fcDelta.textContent=d.delta;
       fcAl.style.display=d.al?'inline-flex':'none';
+      // below-market hook + "vs area median" bar, derived from the delta string
+      var m=/(\d+(?:\.\d+)?)/.exec(d.delta||''), pct=m?parseFloat(m[1]):0;
+      fcDelta.textContent=d.delta||'';
+      fcDeltaChip.style.display=d.delta?'inline-flex':'none';
+      if(fcViz && fcBar){
+        if(pct>0){ fcViz.style.display=''; fcBar.style.width=Math.max(6,100-pct)+'%'; if(fcBarVal) fcBarVal.textContent='−'+Math.round(pct)+'%'; }
+        else { fcViz.style.display='none'; }
+      }
       dots.forEach(function(b,k){ var on=k===idx; b.classList.toggle('active',on); b.setAttribute('aria-pressed', on?'true':'false'); });
     }
     function show(n){

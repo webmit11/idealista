@@ -136,46 +136,42 @@
 
         <!-- hero media + signature data card -->
         <div class="hero-media reveal d2">
-          <!-- Real Porto cityscape (Dom Luís I bridge over the Douro). Unsplash License; self-host before prod. -->
-          <div class="hero-photo">
-            <img src="/static/hero-porto.jpg"
-                 alt="Porto skyline with the Dom Luís I bridge over the Douro river at golden hour" width="1400" height="875" fetchpriority="high">
-            <span class="place-tag">
-              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="2.6"/></svg>
-              Porto · Portugal
-            </span>
-          </div>
-          <div class="deal-card" id="topDeal">
-            <div class="fc-head">
-              <span class="fc-label"><span class="fc-dot" aria-hidden="true"></span>Today's top deal</span>
-              <span class="fc-fresh">updated today</span>
+          <article class="spotlight" id="topDeal" aria-live="polite" aria-label="Today's top-scored deal">
+            <div class="sp-head">
+              <span class="sp-label"><span class="fc-dot" aria-hidden="true"></span>Today's top deal</span>
+              <span class="sp-fresh">AI-scored · updated today</span>
             </div>
-            <div class="fc-body">
-              <img class="fc-thumb" id="fcThumb" src="https://aicraftpin.com/img/3578" alt="" width="60" height="60" loading="lazy">
-              <div class="fc-meta">
-                <div class="price mono" id="fcPrice">€230,000</div>
-                <div class="sub" id="fcSub">T2 · 85 m² · Bonfim, Porto</div>
-              </div>
-              <div class="score lg" id="fcScore" style="--c:138.2;--score:92;--ring-color:var(--pos)" role="img" aria-label="Deal score 92 out of 100">
+            <div class="sp-photo">
+              <img id="fcThumb" src="/img/3578" alt="Top-scored listing" loading="lazy" onerror="this.onerror=null;this.src='/static/hero-porto.jpg'">
+              <span class="score lg sp-score" id="fcScore" style="--c:138.2;--score:92;--ring-color:var(--pos)" role="img" aria-label="Deal score 92 out of 100">
                 <svg viewBox="0 0 50 50" aria-hidden="true"><circle class="ticks" cx="25" cy="25" r="22"/><circle class="val" cx="25" cy="25" r="22"/></svg>
                 <span class="num mono" id="fcScoreNum">92</span>
-              </div>
+              </span>
+              <span class="chip chip-al sp-al" id="fcAl" style="display:none"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="9" r="4.2"/><path d="M11 12l8 8M16.5 17.5l2-2M19 20l2-2"/></svg>AL · short-let</span>
             </div>
-            <div class="fc-foot">
-              <div class="fc-chips">
+            <div class="sp-body">
+              <div class="sp-priceline">
+                <span class="price mono" id="fcPrice">€230,000</span>
                 <span class="chip chip-pos" id="fcDelta"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14m0 0-6-6m6 6 6-6"/></svg><span class="txt">24% below market</span></span>
-                <span class="chip chip-al fc-al" id="fcAl" style="display:none"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="9" r="4.2"/><path d="M11 12l8 8M16.5 17.5l2-2M19 20l2-2"/></svg>AL</span>
               </div>
-              <a class="fc-cta" href="#deals">View deal
-                <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg>
-              </a>
+              <div class="sp-facts" id="fcSub">T2 · 85 m² · Bonfim, Porto</div>
+              <div class="sp-viz" id="fcViz">
+                <div class="sp-viz-head"><span>Price per m² vs area median</span><span class="sp-viz-val" id="fcBarVal">−24%</span></div>
+                <div class="sp-bar"><i class="sp-bar-fill" id="fcBar" style="width:76%"></i></div>
+                <div class="sp-bar-legend"><span>This home</span><span>Area median</span></div>
+              </div>
+              <div class="sp-foot">
+                <a class="fc-cta" href="#deals">View deal
+                  <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg>
+                </a>
+                <div class="fc-dots" id="fcDots" role="group" aria-label="Rotate featured deals">
+                  <button class="active" type="button" aria-label="Deal 1" aria-pressed="true"></button>
+                  <button type="button" aria-label="Deal 2" aria-pressed="false"></button>
+                  <button type="button" aria-label="Deal 3" aria-pressed="false"></button>
+                </div>
+              </div>
             </div>
-            <div class="fc-dots" id="fcDots" role="group" aria-label="Rotate featured deals">
-              <button class="active" type="button" aria-label="Deal 1" aria-pressed="true"></button>
-              <button type="button" aria-label="Deal 2" aria-pressed="false"></button>
-              <button type="button" aria-label="Deal 3" aria-pressed="false"></button>
-            </div>
-          </div>
+          </article>
         </div>
       </div>
 
