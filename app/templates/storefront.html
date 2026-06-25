@@ -138,7 +138,7 @@
         <div class="hero-media reveal d2">
           <!-- Real Porto cityscape (Dom Luís I bridge over the Douro). Unsplash License; self-host before prod. -->
           <div class="hero-photo">
-            <img src="https://images.unsplash.com/photo-1762294946283-6921938e9937?q=80&w=1400&auto=format&fit=crop"
+            <img src="/static/hero-porto.jpg"
                  alt="Porto skyline with the Dom Luís I bridge over the Douro river at golden hour" width="1400" height="875" fetchpriority="high">
             <span class="place-tag">
               <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="2.6"/></svg>
@@ -228,125 +228,50 @@
       </div>
 
       <div class="deals-grid">
-
-        <!-- CARD 1 -->
-        <article class="card reveal">
+{% for d in deals %}
+        <article class="card reveal{% if not loop.first %} d{{ loop.index0 }}{% endif %}">
           <div class="card-media">
-            <img src="https://aicraftpin.com/img/3578" alt="Renovated T2 apartment in Bonfim, Porto" width="480" height="360" loading="lazy">
+            <img src="/img/{{ d.id }}" alt="{{ d.typology }} in {{ d.parish or d.municipality }}" width="480" height="360" loading="lazy" onerror="this.onerror=null;this.src='/static/hero-porto.jpg'">
             <div class="media-tl">
-              <span class="score" style="--c:138.2;--score:92;--ring-color:var(--pos)" role="img" aria-label="Deal score 92 out of 100">
+              <span class="score" style="--c:138.2;--score:{{ d.total_score|round|int }};--ring-color:{{ 'var(--pos)' if d.total_score >= 85 else 'var(--warn)' }}" role="img" aria-label="Deal score {{ d.total_score|round|int }} out of 100">
                 <svg viewBox="0 0 50 50" aria-hidden="true"><circle class="ticks" cx="25" cy="25" r="22"/><circle class="val" cx="25" cy="25" r="22"/></svg>
-                <span class="num mono">92</span>
+                <span class="num mono">{{ d.total_score|round|int }}</span>
               </span>
-              <span class="score-label"><span class="t">Deal score</span><span class="d hi">Excellent</span></span>
+              <span class="score-label"><span class="t">Deal score</span><span class="d {{ 'hi' if d.total_score >= 85 else 'mid' }}">{{ 'Excellent' if d.total_score >= 85 else 'Strong' }}</span></span>
             </div>
             <div class="media-tr">
-              <span class="chip chip-onmedia">Renovated</span>
+              {% if d.has_al_license %}<span class="chip chip-al" title="Short-let (Alojamento Local) licence"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="9" r="4.2"/><path d="M11 12l8 8M16.5 17.5l2-2M19 20l2-2"/></svg>AL · short-let</span>
+              {% elif d.price_drop_percent and d.price_drop_percent > 0 %}<span class="chip chip-info"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14m0 0-6-6m6 6 6-6"/></svg>Price drop</span>
+              {% elif d.condition %}<span class="chip chip-onmedia">{{ d.condition|capitalize }}</span>{% endif %}
             </div>
           </div>
           <div class="card-body">
             <div class="price-row">
-              <span class="price mono">€230,000</span>
-              <span class="chip chip-pos"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14m0 0-6-6m6 6 6-6"/></svg>24% below market</span>
+              <span class="price mono">€{{ '{:,.0f}'.format(d.price).replace(',', ' ') if d.price else '—' }}</span>
+              {% if d.price_drop_percent and d.price_drop_percent > 0 and d.previous_price %}<span class="price-old">€{{ '{:,.0f}'.format(d.previous_price).replace(',', ' ') }}</span>{% endif %}
+              {% if d.ppm2_diff_pct and d.ppm2_diff_pct < 0 %}<span class="chip chip-pos"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14m0 0-6-6m6 6 6-6"/></svg>{{ (-d.ppm2_diff_pct)|round|int }}% below market</span>{% endif %}
             </div>
             <div class="metric-row">
-              <div class="metric"><span class="mv mono pos">6.3%</span><span class="mk">Gross yield</span></div>
-              <div class="metric div"><span class="mv mono">€2,706</span><span class="mk">Price / m²</span></div>
-              <div class="metric div"><span class="mv mono">B</span><span class="mk">Energy</span></div>
+              <div class="metric"><span class="mv mono pos">{% if d.has_al_license and d.al_gross_yield %}{{ '%.1f'|format(d.al_gross_yield) }}%{% elif d.gross_yield_percent %}{{ '%.1f'|format(d.gross_yield_percent) }}%{% else %}—{% endif %}</span><span class="mk">{{ 'AL yield' if d.has_al_license else 'Gross yield' }}</span></div>
+              <div class="metric div"><span class="mv mono">{% if d.price_per_m2 %}€{{ d.price_per_m2|round|int }}{% else %}—{% endif %}</span><span class="mk">Price / m²</span></div>
+              <div class="metric div"><span class="mv mono">{{ d.energy_certificate or '—' }}</span><span class="mk">Energy</span></div>
             </div>
-            <div class="facts"><span class="t">T2</span><span class="sepd"></span>85 m²<span class="sepd"></span>Bonfim, Porto</div>
-            <div class="metro">
+            <div class="facts"><span class="t">{{ d.typology or '?' }}</span><span class="sepd"></span>{% if d.area_m2 %}{{ d.area_m2|round|int }} m²{% endif %}<span class="sepd"></span>{{ d.parish or d.municipality }}</div>
+            {% if d.nearest_metro_station %}<div class="metro">
               <span class="mglyph"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="14" rx="3"/><path d="M5 11h14M9 21l-1.5-2M15 21l1.5-2"/><circle cx="8.5" cy="14" r=".6" fill="currentColor"/><circle cx="15.5" cy="14" r=".6" fill="currentColor"/></svg></span>
-              <b>Campo 24 de Agosto</b>
-              <span class="walk">5&nbsp;min · 400&nbsp;m</span>
-            </div>
+              <b>{{ d.nearest_metro_station }}</b>
+              <span class="walk">{% if d.walking_minutes_to_metro_estimate %}{{ d.walking_minutes_to_metro_estimate|round|int }}&nbsp;min{% endif %}{% if d.distance_to_metro_m %} · {{ d.distance_to_metro_m|round|int }}&nbsp;m{% endif %}</span>
+            </div>{% endif %}
             <div class="card-foot">
-              <span class="agency"><span class="av">PP</span>Porto Prime</span>
+              <span class="agency">{% if d.listing_agency %}<span class="av">{{ d.listing_agency[:2]|upper }}</span>{{ d.listing_agency }}{% endif %}</span>
               <span class="go">View deal<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg></span>
             </div>
           </div>
-          <a class="card-link" href="#" aria-label="View T2 in Bonfim, Porto — €230,000, deal score 92"></a>
+          <a class="card-link" href="#lead" aria-label="Get a shortlist like {{ d.typology }} in {{ d.parish or d.municipality }}"></a>
         </article>
-
-        <!-- CARD 2 -->
-        <article class="card reveal d1">
-          <div class="card-media">
-            <img src="https://aicraftpin.com/img/1277" alt="T2 apartment with garage in Senhora da Hora, Matosinhos" width="480" height="360" loading="lazy">
-            <div class="media-tl">
-              <span class="score" style="--c:138.2;--score:88;--ring-color:var(--pos)" role="img" aria-label="Deal score 88 out of 100">
-                <svg viewBox="0 0 50 50" aria-hidden="true"><circle class="ticks" cx="25" cy="25" r="22"/><circle class="val" cx="25" cy="25" r="22"/></svg>
-                <span class="num mono">88</span>
-              </span>
-              <span class="score-label"><span class="t">Deal score</span><span class="d hi">Excellent</span></span>
-            </div>
-            <div class="media-tr">
-              <span class="chip chip-info"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14m0 0-6-6m6 6 6-6"/></svg>Price drop</span>
-            </div>
-          </div>
-          <div class="card-body">
-            <div class="price-row">
-              <span class="price mono">€215,000</span>
-              <span class="price-old">€235,000</span>
-              <span class="chip chip-pos"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14m0 0-6-6m6 6 6-6"/></svg>18% below market</span>
-            </div>
-            <div class="metric-row">
-              <div class="metric"><span class="mv mono pos">6.9%</span><span class="mk">Gross yield</span></div>
-              <div class="metric div"><span class="mv mono">€2,337</span><span class="mk">Price / m²</span></div>
-              <div class="metric div"><span class="mv mono">−€20k</span><span class="mk">Since listed</span></div>
-            </div>
-            <div class="facts"><span class="t">T2</span><span class="sepd"></span>92 m²<span class="sepd"></span>Senhora da Hora, Matosinhos</div>
-            <div class="metro">
-              <span class="mglyph"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="14" rx="3"/><path d="M5 11h14M9 21l-1.5-2M15 21l1.5-2"/><circle cx="8.5" cy="14" r=".6" fill="currentColor"/><circle cx="15.5" cy="14" r=".6" fill="currentColor"/></svg></span>
-              <b>Senhora da Hora</b>
-              <span class="walk">4&nbsp;min · 300&nbsp;m</span>
-            </div>
-            <div class="card-foot">
-              <span class="agency"><span class="av">AT</span>Atlântico Imob.</span>
-              <span class="go">View deal<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg></span>
-            </div>
-          </div>
-          <a class="card-link" href="#" aria-label="View T2 in Senhora da Hora — €215,000, deal score 88"></a>
-        </article>
-
-        <!-- CARD 3 -->
-        <article class="card reveal d2">
-          <div class="card-media">
-            <img src="https://aicraftpin.com/img/3578/1" alt="Studio T0 near Trindade in the centre of Porto" width="480" height="360" loading="lazy">
-            <div class="media-tl">
-              <span class="score" style="--c:138.2;--score:84;--ring-color:var(--warn)" role="img" aria-label="Deal score 84 out of 100">
-                <svg viewBox="0 0 50 50" aria-hidden="true"><circle class="ticks" cx="25" cy="25" r="22"/><circle class="val" cx="25" cy="25" r="22"/></svg>
-                <span class="num mono">84</span>
-              </span>
-              <span class="score-label"><span class="t">Deal score</span><span class="d mid">Strong</span></span>
-            </div>
-            <div class="media-tr">
-              <span class="chip chip-al" title="Short-let (Alojamento Local) licence"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="9" r="4.2"/><path d="M11 12l8 8M16.5 17.5l2-2M19 20l2-2"/></svg>AL · short-let</span>
-            </div>
-          </div>
-          <div class="card-body">
-            <div class="price-row">
-              <span class="price mono">€150,000</span>
-              <span class="chip chip-pos"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14m0 0-6-6m6 6 6-6"/></svg>11% below market</span>
-            </div>
-            <div class="metric-row">
-              <div class="metric"><span class="mv mono pos">9.4%</span><span class="mk">AL yield</span></div>
-              <div class="metric div"><span class="mv mono">€4,286</span><span class="mk">Price / m²</span></div>
-              <div class="metric div"><span class="mv mono">€1,180</span><span class="mk">Short-let / mo</span></div>
-            </div>
-            <div class="facts"><span class="t">T0</span><span class="sepd"></span>35 m²<span class="sepd"></span>Santo Ildefonso, Porto</div>
-            <div class="metro">
-              <span class="mglyph"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="14" rx="3"/><path d="M5 11h14M9 21l-1.5-2M15 21l1.5-2"/><circle cx="8.5" cy="14" r=".6" fill="currentColor"/><circle cx="15.5" cy="14" r=".6" fill="currentColor"/></svg></span>
-              <b>Trindade</b>
-              <span class="walk">3&nbsp;min · 220&nbsp;m</span>
-            </div>
-            <div class="card-foot">
-              <span class="agency"><span class="av">PP</span>Porto Prime</span>
-              <span class="go">View deal<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg></span>
-            </div>
-          </div>
-          <a class="card-link" href="#" aria-label="View T0 studio near Trindade, Porto — €150,000, deal score 84"></a>
-        </article>
-
+{% else %}
+        <p style="color:var(--text-3);grid-column:1/-1">Fresh deals are being scored — check back shortly.</p>
+{% endfor %}
       </div>
 
       <div class="deals-cta reveal">
@@ -493,6 +418,7 @@
 
         <div class="lead-form">
           <form id="leadForm" novalidate>
+            <input type="text" name="company" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0">
             <div class="fgrid">
               <div class="lf-field" id="ff-email">
                 <label for="le-email">Email <span class="req" aria-hidden="true">*</span></label>
@@ -599,6 +525,7 @@
   </div>
 </footer>
 
+<script>window.YENDARI_DEALS = {{ hero_json|safe }};</script>
 <script src="/static/storefront.js" defer></script>
 </body>
 </html>

@@ -131,8 +131,20 @@
     leadForm.addEventListener('submit',function(e){
       e.preventDefault();
       if(!validEmail()){ ffEmail.classList.add('invalid'); emailF.focus(); return; }
-      document.getElementById('leadWrap').classList.add('is-sent');
-      var done=document.querySelector('.form-done'); if(done) done.focus();
+      var goalEl=leadForm.querySelector('input[name="le-goal"]:checked');
+      var val=function(id){ var el=document.getElementById(id); return el?el.value:''; };
+      var hp=leadForm.querySelector('[name="company"]');
+      var payload={ email:emailF.value.trim(), phone:val('le-phone'), budget:val('le-budget'),
+        timeline:val('le-timeline'), goal:goalEl?goalEl.value:'', company:hp?hp.value:'' };
+      var btn=leadForm.querySelector('button[type="submit"]'); if(btn) btn.disabled=true;
+      fetch('/home/api/lead',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
+        .then(function(r){
+          if(r.ok){
+            document.getElementById('leadWrap').classList.add('is-sent');
+            var done=document.querySelector('.form-done'); if(done) done.focus();
+          } else { if(btn) btn.disabled=false; if(r.status!==429) ffEmail.classList.add('invalid'); }
+        })
+        .catch(function(){ if(btn) btn.disabled=false; });
     });
   }
 
@@ -148,10 +160,8 @@
   /* hero "today's top deal" — soft rotation of a few real listings */
   var topDeal=document.getElementById('topDeal');
   if(topDeal){
-    var deals=[
-      {img:'https://aicraftpin.com/img/3578',  score:92, ring:'--pos',  price:'€230,000', sub:'T2 · 85 m² · Bonfim, Porto',         delta:'24% below market', al:false},
-      {img:'https://aicraftpin.com/img/1277',  score:88, ring:'--pos',  price:'€215,000', sub:'T2 · 92 m² · Senhora da Hora',       delta:'18% below market', al:false},
-      {img:'https://aicraftpin.com/img/3578/1',score:84, ring:'--warn', price:'€150,000', sub:'T0 · 35 m² · Santo Ildefonso, Porto', delta:'11% below market', al:true}
+    var deals=(window.YENDARI_DEALS && window.YENDARI_DEALS.length) ? window.YENDARI_DEALS : [
+      {img:'https://aicraftpin.com/img/3578', score:92, ring:'--pos', price:'€230,000', sub:'T2 · 85 m² · Bonfim, Porto', delta:'24% below market', al:false}
     ];
     var fcThumb=document.getElementById('fcThumb'),
         fcScore=document.getElementById('fcScore'),

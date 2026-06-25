@@ -180,6 +180,29 @@ def _storefront_deals(session: Session, limit: int = 3) -> list:
     return deals
 
 
+def _hero_deals(deals: list) -> list:
+    """Compact shape for the hero 'today's top deal' rotation (storefront.js reads it)."""
+    out = []
+    for d in deals:
+        score = d.get("total_score") or 0
+        diff = d.get("ppm2_diff_pct")
+        sub = [d.get("typology") or "?"]
+        if d.get("area_m2"):
+            sub.append(f"{round(d['area_m2'])} m²")
+        if d.get("parish") or d.get("municipality"):
+            sub.append(d.get("parish") or d.get("municipality"))
+        out.append({
+            "img": d.get("thumb") or "/static/hero-porto.jpg",
+            "score": round(score),
+            "ring": "--pos" if score >= 85 else "--warn",
+            "price": (f"€{d['price']:,.0f}".replace(",", " ")) if d.get("price") else "",
+            "sub": " · ".join(sub),
+            "delta": (f"{round(-diff)}% below market" if (diff is not None and diff < 0) else ""),
+            "al": bool(d.get("has_al_license")),
+        })
+    return out
+
+
 @app.get("/home", response_class=HTMLResponse)
 def storefront(request: Request, session: Session = Depends(get_session)):
     """Public English-first storefront (Yendari) — open browsing, no Telegram auth.
@@ -188,10 +211,11 @@ def storefront(request: Request, session: Session = Depends(get_session)):
     Mini App at `/app` (initData). Allow-listed in the basic_auth middleware so it
     stays public; assets load from /static, listing photos from /img.
     """
+    deals = _storefront_deals(session)
     return templates.TemplateResponse(
         request,
         "storefront.html",
-        {"app_name": settings.app_name, "deals": _storefront_deals(session)},
+        {"app_name": settings.app_name, "deals": deals, "hero_json": json.dumps(_hero_deals(deals))},
     )
 
 
