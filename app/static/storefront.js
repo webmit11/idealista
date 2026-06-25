@@ -174,8 +174,11 @@
         fcYield=document.getElementById('fcYield'),
         fcMetro=document.getElementById('fcMetro'),
         fcAl=document.getElementById('fcAl'),
+        fcScoreBtn=document.getElementById('fcScoreBtn'),
+        fcVerdict=document.getElementById('fcVerdict'),
         dots=Array.prototype.slice.call(topDeal.querySelectorAll('.fc-dots button')),
         idx=0, timer=null, target=0, raf=null, tA=null, tB=null, dealOn=true;
+    function verdictOf(s){ return s>=85?'Excellent':(s>=75?'Strong':'Good'); }
     function chip(el, txt){ if(!el) return; var t=el.querySelector('.txt'); if(t) t.textContent=txt||''; el.style.display=txt?'':'none'; }
     function setData(d){
       fcThumb.src=d.img;
@@ -186,6 +189,14 @@
       fcSub.textContent=d.sub||'';
       chip(fcDelta, d.delta); chip(fcYield, d['yield']); chip(fcMetro, d.metro);
       fcAl.style.display=d.al?'':'none';
+      var vd=verdictOf(target);
+      if(fcVerdict){ fcVerdict.textContent=vd; fcVerdict.className='d '+(target>=85?'hi':(target>=75?'mid':'lo')); }
+      if(fcScoreBtn){
+        fcScoreBtn.setAttribute('data-score', target);
+        fcScoreBtn.setAttribute('data-verdict', vd);
+        fcScoreBtn.setAttribute('data-factors', JSON.stringify(d.factors||[]));
+        fcScoreBtn.setAttribute('aria-label', 'Yendari Deal Score '+target+' of 100, '+vd+' — how we score');
+      }
       dots.forEach(function(b,k){ var on=k===idx; b.classList.toggle('active',on); b.setAttribute('aria-pressed', on?'true':'false'); });
     }
     function countScore(){
@@ -231,4 +242,61 @@
     dots.forEach(function(b,k){ b.addEventListener('click', function(){ show(k, true); restart(); }); });
     restart();
   }
+
+  /* Deal Score popover "How we score" — shared by grid cards + hero (transparency = trust) */
+  (function(){
+    var pop=document.getElementById('scorePop'); if(!pop) return;
+    var openBtn=null, hideT=null;
+    var canHover=window.matchMedia('(hover:hover) and (pointer:fine)').matches;
+    function esc(s){ var d=document.createElement('div'); d.textContent=(s==null?'':s); return d.innerHTML; }
+    function build(btn){
+      var sc=parseInt(btn.getAttribute('data-score'),10)||0;
+      var vd=btn.getAttribute('data-verdict')||'';
+      var fs=[]; try{ fs=JSON.parse(btn.getAttribute('data-factors')||'[]'); }catch(e){}
+      var rows=fs.map(function(f){
+        var p=Math.max(0,Math.min(100, Math.round(+f.pct||0)));
+        return '<div class="pf"><div class="pf-top"><span class="pf-l">'+esc(f.label)+'</span>'+
+               '<span class="pf-w">·'+esc(f.weight)+'</span></div>'+
+               '<div class="pf-track"><i class="pf-fill'+(p>=70?' pos':'')+'" style="width:'+p+'%"></i></div></div>';
+      }).join('');
+      pop.innerHTML='<div class="pop-head">Deal Score <b>'+sc+'</b> / 100 · <span class="pop-verdict">'+esc(vd)+'</span></div>'+
+                    '<div class="pop-factors">'+rows+'</div>'+
+                    '<div class="pop-foot">Weighted 0–100 · ±10 AI photo check · risk flags −20</div>';
+    }
+    function place(btn){
+      var r=btn.getBoundingClientRect(), m=10;
+      pop.hidden=false;
+      var pw=pop.offsetWidth, ph=pop.offsetHeight;
+      var left=Math.min(Math.max(m, r.left), window.innerWidth-m-pw);
+      var top=r.bottom+8;
+      if(top+ph>window.innerHeight-m) top=Math.max(m, r.top-ph-8);
+      pop.style.left=left+'px'; pop.style.top=top+'px';
+    }
+    function open(btn){
+      if(openBtn && openBtn!==btn) openBtn.setAttribute('aria-expanded','false');
+      openBtn=btn; build(btn); place(btn);
+      btn.setAttribute('aria-expanded','true'); pop.classList.add('open');
+    }
+    function close(){ if(!openBtn) return; openBtn.setAttribute('aria-expanded','false'); openBtn=null; pop.classList.remove('open'); pop.hidden=true; }
+    document.addEventListener('click', function(e){
+      var btn=e.target.closest && e.target.closest('.score-btn');
+      if(btn){ e.preventDefault(); (openBtn===btn)?close():open(btn); return; }
+      if(!(e.target.closest && e.target.closest('#scorePop'))) close();
+    });
+    if(canHover){
+      document.addEventListener('mouseover', function(e){
+        var btn=e.target.closest && e.target.closest('.score-btn');
+        if(btn){ clearTimeout(hideT); open(btn); }
+      });
+      document.addEventListener('mouseout', function(e){
+        var to=e.relatedTarget, stay=to && to.closest && (to.closest('.score-btn')||to.closest('#scorePop'));
+        if(!stay){ clearTimeout(hideT); hideT=setTimeout(close,200); }
+      });
+      pop.addEventListener('mouseenter', function(){ clearTimeout(hideT); });
+      pop.addEventListener('mouseleave', function(){ clearTimeout(hideT); hideT=setTimeout(close,200); });
+    }
+    document.addEventListener('keydown', function(e){ if(e.key==='Escape'||e.keyCode===27) close(); });
+    window.addEventListener('scroll', function(){ if(openBtn) place(openBtn); }, {passive:true});
+    window.addEventListener('resize', function(){ if(openBtn) place(openBtn); });
+  })();
 })();

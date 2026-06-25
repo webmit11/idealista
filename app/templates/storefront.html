@@ -150,10 +150,13 @@
             <div class="sp-stage" id="dealStage">
               <img id="fcThumb" src="/img/3578" alt="Top-scored listing" loading="lazy" onerror="this.onerror=null;this.src='/static/hero-porto.jpg'">
               <span class="sp-scan" aria-hidden="true"></span>
-              <span class="score lg sp-score" id="fcScore" style="--c:138.2;--score:92;--ring-color:var(--pos)" role="img" aria-label="Deal score 92 out of 100">
-                <svg viewBox="0 0 50 50" aria-hidden="true"><circle class="ticks" cx="25" cy="25" r="22"/><circle class="val" cx="25" cy="25" r="22"/></svg>
-                <span class="num mono" id="fcScoreNum">92</span>
-              </span>
+              <button class="sp-score score-btn" id="fcScoreBtn" type="button" aria-haspopup="dialog" aria-expanded="false" data-score="92" data-verdict="Excellent" data-factors="[]" aria-label="Yendari Deal Score — how we score">
+                <span class="score lg" id="fcScore" style="--c:138.2;--score:92;--ring-color:var(--pos)" aria-hidden="true">
+                  <svg viewBox="0 0 50 50" aria-hidden="true"><circle class="ticks" cx="25" cy="25" r="22"/><circle class="val" cx="25" cy="25" r="22"/></svg>
+                  <span class="num mono" id="fcScoreNum">92</span>
+                </span>
+                <span class="score-label"><span class="d" id="fcVerdict">Excellent</span><span class="t">Yendari Deal Score</span></span>
+              </button>
               <span class="chip chip-al sp-al" id="fcAl" style="display:none"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="9" r="4.2"/><path d="M11 12l8 8M16.5 17.5l2-2M19 20l2-2"/></svg>AL · short-let</span>
               <div class="sp-panel">
                 <div class="sp-priceline">
@@ -234,13 +237,17 @@
         <article class="card reveal{% if not loop.first %} d{{ loop.index0 }}{% endif %}">
           <div class="card-media">
             <img src="/img/{{ d.id }}" alt="{{ d.typology }} in {{ d.parish or d.municipality }}" width="480" height="360" loading="lazy" onerror="this.onerror=null;this.src='/static/hero-porto.jpg'">
-            <div class="media-tl">
-              <span class="score" style="--c:138.2;--score:{{ d.total_score|round|int }};--ring-color:{{ 'var(--pos)' if d.total_score >= 85 else 'var(--warn)' }}" role="img" aria-label="Deal score {{ d.total_score|round|int }} out of 100">
+            <button class="media-tl score-btn" type="button" aria-haspopup="dialog" aria-expanded="false"
+                    data-score="{{ d.total_score|round|int }}"
+                    data-verdict="{{ 'Excellent' if d.total_score >= 85 else ('Strong' if d.total_score >= 75 else 'Good') }}"
+                    data-factors='{{ d.factors|tojson }}'
+                    aria-label="Yendari Deal Score {{ d.total_score|round|int }} of 100, {{ 'Excellent' if d.total_score >= 85 else ('Strong' if d.total_score >= 75 else 'Good') }} — how we score">
+              <span class="score" style="--c:138.2;--score:{{ d.total_score|round|int }};--ring-color:{{ 'var(--pos)' if d.total_score >= 85 else 'var(--warn)' }}" aria-hidden="true">
                 <svg viewBox="0 0 50 50" aria-hidden="true"><circle class="ticks" cx="25" cy="25" r="22"/><circle class="val" cx="25" cy="25" r="22"/></svg>
                 <span class="num mono">{{ d.total_score|round|int }}</span>
               </span>
-              <span class="score-label"><span class="t">Deal score</span><span class="d {{ 'hi' if d.total_score >= 85 else 'mid' }}">{{ 'Excellent' if d.total_score >= 85 else 'Strong' }}</span></span>
-            </div>
+              <span class="score-label"><span class="d {{ 'hi' if d.total_score >= 85 else ('mid' if d.total_score >= 75 else 'lo') }}">{{ 'Excellent' if d.total_score >= 85 else ('Strong' if d.total_score >= 75 else 'Good') }}</span><span class="t">Yendari Deal Score</span></span>
+            </button>
             <div class="media-tr">
               {% if d.has_al_license %}<span class="chip chip-al" title="Short-let (Alojamento Local) licence"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="9" r="4.2"/><path d="M11 12l8 8M16.5 17.5l2-2M19 20l2-2"/></svg>AL · short-let</span>
               {% elif d.price_drop_percent and d.price_drop_percent > 0 %}<span class="chip chip-info"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14m0 0-6-6m6 6 6-6"/></svg>Price drop</span>
@@ -528,6 +535,7 @@
 </footer>
 
 <script>window.YENDARI_DEALS = {{ hero_json|safe }};</script>
+<div class="score-pop" id="scorePop" role="dialog" aria-label="How we score" hidden></div>
 <script src="/static/storefront.js" defer></script>
 </body>
 </html>

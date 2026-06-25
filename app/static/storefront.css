@@ -262,7 +262,9 @@ button,input,select{font:inherit;color:inherit}
 .sp-stage.scanning .sp-scan{animation:sp-scan .85s cubic-bezier(.4,0,.2,1)}
 @keyframes sp-scan{0%{top:-2%;opacity:0}12%{opacity:1}88%{opacity:1}100%{top:101%;opacity:0}}
 
-.sp-score{position:absolute;left:16px;top:16px;z-index:4;filter:drop-shadow(0 3px 10px rgba(0,0,0,.65))}
+.sp-score{position:absolute;left:16px;top:16px;z-index:4;display:inline-flex;align-items:center;gap:10px;
+  padding:6px 14px 6px 6px;border-radius:var(--pill);
+  background:var(--scrim);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid var(--border-strong)}
 .sp-al{position:absolute;right:16px;top:16px;z-index:4;
   background:var(--scrim);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid var(--accent-line);color:var(--accent)}
 .sp-panel{position:absolute;left:0;right:0;bottom:0;z-index:4;padding:16px 18px;display:flex;flex-direction:column;gap:9px}
@@ -357,6 +359,26 @@ button,input,select{font:inherit;color:inherit}
   font-family:var(--ff-mono);font-size:15.5px;font-weight:600;letter-spacing:-.05em}
 .score.lg{width:58px;height:58px}.score.lg svg{width:58px;height:58px}.score.lg .num{font-size:18.5px}
 
+/* ===== Deal Score popover "How we score" ===== */
+.score-pop{position:fixed;z-index:1000;width:270px;max-width:calc(100vw - 20px);
+  background:var(--bg-elev);border:1px solid var(--border-strong);border-radius:var(--r);
+  box-shadow:var(--shadow-pop);padding:14px;opacity:0;transform:translateY(-4px);
+  transition:opacity .14s ease,transform .14s ease}
+.score-pop.open{opacity:1;transform:none}
+.score-pop[hidden]{display:none}
+.pop-head{font-size:13px;color:var(--text-2);padding-bottom:10px;margin-bottom:11px;border-bottom:1px solid var(--border)}
+.pop-head b{font-family:var(--ff-mono);color:var(--text);font-size:15px;font-weight:600}
+.pop-verdict{font-weight:700;color:var(--accent)}
+.pop-factors{display:flex;flex-direction:column;gap:10px}
+.pf-top{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:12px;margin-bottom:4px}
+.pf-l{color:var(--text-2)}
+.pf-w{font-family:var(--ff-mono);font-size:11px;color:var(--text-3)}
+.pf-track{height:5px;border-radius:99px;background:var(--surface-2);overflow:hidden}
+.pf-fill{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--accent-strong),var(--accent))}
+.pf-fill.pos{background:linear-gradient(90deg,var(--pos),#67e0a8)}
+.pop-foot{margin-top:12px;padding-top:10px;border-top:1px solid var(--border);font-size:10px;color:var(--text-3);font-family:var(--ff-mono);letter-spacing:.02em;line-height:1.6}
+@media (prefers-reduced-motion:reduce){ .score-pop{transition:none} }
+
 /* chips */
 .chip{display:inline-flex;align-items:center;gap:5px;height:26px;padding:0 9px;border-radius:8px;
   font-size:12.5px;font-weight:600;letter-spacing:-.01em;white-space:nowrap}
@@ -399,11 +421,16 @@ button,input,select{font:inherit;color:inherit}
 .media-tl{position:absolute;left:12px;top:12px;z-index:2;display:flex;align-items:center;gap:8px;
   background:var(--scrim);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
   border:1px solid var(--border-strong);border-radius:var(--pill);padding:5px 12px 5px 6px}
-.media-tl .score-label{display:flex;flex-direction:column;line-height:1}
-.media-tl .score-label .t{font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--text-3);font-weight:600}
-.media-tl .score-label .d{font-size:12px;font-weight:600;margin-top:2px}
-.media-tl .score-label .d.hi{color:var(--pos-text)}
-.media-tl .score-label .d.mid{color:var(--warn)}
+.score-btn{cursor:pointer;font:inherit;color:inherit;text-align:left;-webkit-appearance:none;appearance:none;transition:border-color .15s,transform .12s}
+.score-btn:hover{border-color:var(--accent-line)}
+.score-btn:active{transform:scale(.98)}
+.score-btn:focus-visible{outline:none;box-shadow:var(--ring)}
+.score-label{display:flex;flex-direction:column;line-height:1.12}
+.score-label .d{font-size:12px;font-weight:700}
+.score-label .d.hi{color:var(--pos-text)}
+.score-label .d.mid{color:var(--warn)}
+.score-label .d.lo{color:var(--text-2)}
+.score-label .t{font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-3);font-weight:600;margin-top:1px}
 .media-tr{position:absolute;right:12px;top:12px;z-index:2;display:flex;gap:6px}
 .media-bl{position:absolute;left:12px;bottom:12px;z-index:2}
 
