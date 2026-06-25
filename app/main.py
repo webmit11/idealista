@@ -163,15 +163,36 @@ def health():
     return {"status": "ok"}
 
 
+def _storefront_deals(session: Session, limit: int = 3) -> list:
+    """Top scored active listings, server-rendered into the storefront (real data + SEO).
+
+    Enriches each with `ppm2_diff_pct` (negative = below local market) from the
+    median benchmark stored at scoring time — the headline "below market" hook.
+    """
+    rows = query_properties(session, sort="score_desc", limit=limit, min_score=70)
+    deals = []
+    for prop, score in rows:
+        d = serialize(prop, score)
+        med = (score.explanation_json or {}).get("median_price_per_m2_benchmark") if score else None
+        ppm2 = d.get("price_per_m2")
+        d["ppm2_diff_pct"] = round((ppm2 / med - 1) * 100, 1) if (ppm2 and med) else None
+        deals.append(d)
+    return deals
+
+
 @app.get("/home", response_class=HTMLResponse)
-def storefront(request: Request):
+def storefront(request: Request, session: Session = Depends(get_session)):
     """Public English-first storefront (Yendari) — open browsing, no Telegram auth.
 
     Distinct from the owner dashboard at `/` (Basic-auth gated) and the Telegram
     Mini App at `/app` (initData). Allow-listed in the basic_auth middleware so it
     stays public; assets load from /static, listing photos from /img.
     """
-    return templates.TemplateResponse(request, "storefront.html", {"app_name": settings.app_name})
+    return templates.TemplateResponse(
+        request,
+        "storefront.html",
+        {"app_name": settings.app_name, "deals": _storefront_deals(session)},
+    )
 
 
 @app.get("/img/{property_id}")
@@ -606,6 +627,75 @@ def _notify_owner_lead(session: Session, lead: Lead, user: dict) -> None:
         telegram_api.send_message(owner, "\n".join(lines), reply_markup=markup)
     except Exception:
         logger.exception("owner lead notification failed")
+
+
+_web_lead_hits: dict = {}
+
+
+def _check_web_lead_rate(ip: Optional[str]) -> None:
+    """Per-IP rate limit for the public lead form (anti-spam): max 5/hour."""
+    if not ip:
+        return
+    now = time.time()
+    hits = [t for t in _web_lead_hits.get(ip, []) if now - t < 3600.0]
+    if len(hits) >= 5:
+        raise HTTPException(status_code=429, detail="Too many requests")
+    hits.append(now)
+    _web_lead_hits[ip] = hits
+
+
+def _notify_owner_web_lead(lead: Lead) -> None:
+    """Push a fresh web (storefront) lead to the owner's Telegram (best-effort)."""
+    owner = settings.telegram_owner_id
+    if not owner:
+        return
+    try:
+        lines = [
+            "🔔 <b>Новый веб-лид (Yendari)</b>",
+            f"Email: <b>{html.escape(lead.email or '—')}</b>",
+            f"WhatsApp: <b>{html.escape(lead.phone or '—')}</b>",
+        ]
+        if lead.intent:
+            lines.append(f"Цель: {html.escape(lead.intent)}")
+        if lead.budget:
+            lines.append(f"Бюджет: {html.escape(lead.budget)}")
+        if lead.timeline:
+            lines.append(f"Срок: {html.escape(lead.timeline)}")
+        if lead.country:
+            lines.append(f"Страна: {html.escape(lead.country)}")
+        telegram_api.send_message(owner, "\n".join(lines))
+    except Exception:
+        logger.exception("owner web-lead notification failed")
+
+
+@app.post("/home/api/lead")
+async def web_lead(request: Request, session: Session = Depends(get_session)):
+    """Public storefront lead capture — no Telegram auth. Honeypot + per-IP rate limit."""
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    if str(body.get("company") or "").strip():  # honeypot: bots fill the hidden field
+        return {"ok": True}
+    ip = geoip.client_ip(request)
+    _check_web_lead_rate(ip)
+    email = str(body.get("email") or "").strip()[:120]
+    if "@" not in email or "." not in email.split("@")[-1]:
+        raise HTTPException(status_code=422, detail="Valid email required")
+    intent = str(body.get("goal") or body.get("intent") or "").strip().lower()[:10]
+    lead = Lead(
+        source="web",
+        email=email,
+        phone=str(body.get("phone") or "").strip()[:40] or None,
+        budget=str(body.get("budget") or "").strip()[:60] or None,
+        timeline=str(body.get("timeline") or "").strip()[:60] or None,
+        intent=intent if intent in ("invest", "live", "both") else None,
+        country=geoip.country_for_ip(ip),
+    )
+    session.add(lead)
+    session.commit()
+    _notify_owner_web_lead(lead)
+    return {"ok": True}
 
 
 @app.post("/app/api/lead")

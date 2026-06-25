@@ -201,9 +201,14 @@ class Lead(SQLModel, table=True):
     __tablename__ = "leads"
 
     id: Optional[int] = Field(default=None, primary_key=True)
-    telegram_id: int = Field(index=True)
+    telegram_id: Optional[int] = Field(default=None, index=True)  # null for web leads
+    source: str = Field(default="chat")  # "chat" (Telegram consultant) | "web" (storefront)
     name: Optional[str] = None
+    email: Optional[str] = None
     phone: Optional[str] = None
     country: Optional[str] = None  # ISO-3166 alpha-2 from IP (GeoLite2), for origin stats
+    budget: Optional[str] = None    # web form
+    timeline: Optional[str] = None  # web form
+    intent: Optional[str] = None    # invest | live | both
     property_id: Optional[int] = None
     created_at: datetime = Field(default_factory=utcnow)
