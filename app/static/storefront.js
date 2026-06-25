@@ -157,53 +157,78 @@
     });
   }
 
-  /* hero "today's top deal" — soft rotation of a few real listings */
+  /* hero "Listing -> Deal reveal": real top deals, analytics reveals over the photo */
   var topDeal=document.getElementById('topDeal');
   if(topDeal){
     var deals=(window.YENDARI_DEALS && window.YENDARI_DEALS.length) ? window.YENDARI_DEALS : [
-      {img:'https://aicraftpin.com/img/3578', score:92, ring:'--pos', price:'€230,000', sub:'T2 · 85 m² · Bonfim, Porto', delta:'24% below market', al:false}
+      {img:'https://aicraftpin.com/img/3578', score:92, ring:'--pos', price:'€230,000', sub:'T2 · 85 m² · Bonfim, Porto', delta:'24% below market', 'yield':'6.3%', metro:'Trindade · 3 min', al:false}
     ];
-    var fcThumb=document.getElementById('fcThumb'),
+    var stage=document.getElementById('dealStage'),
+        toggle=document.getElementById('dealToggle'),
+        fcThumb=document.getElementById('fcThumb'),
         fcScore=document.getElementById('fcScore'),
         fcScoreNum=document.getElementById('fcScoreNum'),
         fcPrice=document.getElementById('fcPrice'),
         fcSub=document.getElementById('fcSub'),
-        fcDeltaChip=document.getElementById('fcDelta'),
-        fcDelta=fcDeltaChip.querySelector('.txt'),
+        fcDelta=document.getElementById('fcDelta'),
+        fcYield=document.getElementById('fcYield'),
+        fcMetro=document.getElementById('fcMetro'),
         fcAl=document.getElementById('fcAl'),
-        fcViz=document.getElementById('fcViz'),
-        fcBar=document.getElementById('fcBar'),
-        fcBarVal=document.getElementById('fcBarVal'),
         dots=Array.prototype.slice.call(topDeal.querySelectorAll('.fc-dots button')),
-        idx=0, timer=null;
-    function paint(d){
+        idx=0, timer=null, target=0, raf=null, tA=null, tB=null, dealOn=true;
+    function chip(el, txt){ if(!el) return; var t=el.querySelector('.txt'); if(t) t.textContent=txt||''; el.style.display=txt?'':'none'; }
+    function setData(d){
       fcThumb.src=d.img;
-      fcScore.style.setProperty('--score', d.score);
+      target=+d.score||0;
       fcScore.style.setProperty('--ring-color', 'var('+d.ring+')');
       fcScore.setAttribute('aria-label', 'Deal score '+d.score+' out of 100');
-      fcScoreNum.textContent=d.score;
-      fcPrice.textContent=d.price;
-      fcSub.textContent=d.sub;
-      fcAl.style.display=d.al?'inline-flex':'none';
-      // below-market hook + "vs area median" bar, derived from the delta string
-      var m=/(\d+(?:\.\d+)?)/.exec(d.delta||''), pct=m?parseFloat(m[1]):0;
-      fcDelta.textContent=d.delta||'';
-      fcDeltaChip.style.display=d.delta?'inline-flex':'none';
-      if(fcViz && fcBar){
-        if(pct>0){ fcViz.style.display=''; fcBar.style.width=Math.max(6,100-pct)+'%'; if(fcBarVal) fcBarVal.textContent='−'+Math.round(pct)+'%'; }
-        else { fcViz.style.display='none'; }
-      }
+      fcPrice.textContent=d.price||'';
+      fcSub.textContent=d.sub||'';
+      chip(fcDelta, d.delta); chip(fcYield, d['yield']); chip(fcMetro, d.metro);
+      fcAl.style.display=d.al?'':'none';
       dots.forEach(function(b,k){ var on=k===idx; b.classList.toggle('active',on); b.setAttribute('aria-pressed', on?'true':'false'); });
     }
-    function show(n){
-      idx=(n+deals.length)%deals.length;
-      if(rm){ paint(deals[idx]); return; }
-      topDeal.style.opacity='.35';
-      setTimeout(function(){ paint(deals[idx]); topDeal.style.opacity='1'; }, 170);
+    function countScore(){
+      cancelAnimationFrame(raf);
+      var start=performance.now(), dur=760;
+      (function tick(now){
+        var p=Math.min((now-start)/dur,1), e=1-Math.pow(1-p,3), v=target*e;
+        fcScore.style.setProperty('--score', v.toFixed(1)); fcScoreNum.textContent=Math.round(v);
+        if(p<1){ raf=requestAnimationFrame(tick); } else { fcScore.style.setProperty('--score', target); fcScoreNum.textContent=target; }
+      })(performance.now());
     }
-    function restart(){ if(timer) clearInterval(timer); if(!rm) timer=setInterval(function(){ show(idx+1); }, 5200); }
-    paint(deals[0]);
-    dots.forEach(function(b,k){ b.addEventListener('click', function(){ show(k); restart(); }); });
+    function reveal(){
+      if(rm){ topDeal.classList.add('revealed'); fcScore.style.setProperty('--score', target); fcScoreNum.textContent=target; return; }
+      topDeal.classList.remove('revealed');
+      fcScore.style.setProperty('--score', 0); fcScoreNum.textContent='0';
+      void topDeal.offsetWidth;                 // reflow so the stagger replays
+      topDeal.classList.add('revealed');
+      stage.classList.remove('scanning'); void stage.offsetWidth; stage.classList.add('scanning');
+      clearTimeout(tA); tA=setTimeout(countScore, 240);
+      clearTimeout(tB); tB=setTimeout(function(){ stage.classList.remove('scanning'); }, 960);
+    }
+    function show(n, replay){
+      idx=(n+deals.length)%deals.length;
+      var apply=function(){ setData(deals[idx]); if(dealOn) reveal(); };
+      if(rm || !replay){ apply(); return; }
+      topDeal.style.opacity='.4';
+      setTimeout(function(){ topDeal.style.opacity='1'; apply(); }, 180);
+    }
+    function setView(on){
+      dealOn=on;
+      toggle.setAttribute('aria-pressed', on?'true':'false');
+      if(on){ reveal(); } else { topDeal.classList.remove('revealed'); stage.classList.remove('scanning'); }
+    }
+    toggle.addEventListener('click', function(){ setView(!dealOn); });
+    function restart(){ if(timer) clearInterval(timer); if(!rm) timer=setInterval(function(){ show(idx+1, true); }, 5600); }
+    setData(deals[0]);
+    if(rm){ reveal(); }
+    else {                                          // show the bare listing first, then reveal the analysis
+      topDeal.classList.remove('revealed');
+      fcScore.style.setProperty('--score', 0); fcScoreNum.textContent='0';
+      setTimeout(reveal, 460);
+    }
+    dots.forEach(function(b,k){ b.addEventListener('click', function(){ show(k, true); restart(); }); });
     restart();
   }
 })();

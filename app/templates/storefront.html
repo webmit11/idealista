@@ -136,39 +136,45 @@
 
         <!-- hero media + signature data card -->
         <div class="hero-media reveal d2">
-          <article class="spotlight" id="topDeal" aria-live="polite" aria-label="Today's top-scored deal">
+          <article class="spotlight revealed" id="topDeal" aria-label="Today's top-scored deal">
             <div class="sp-head">
-              <span class="sp-label"><span class="fc-dot" aria-hidden="true"></span>Today's top deal</span>
-              <span class="sp-fresh">AI-scored · updated today</span>
+              <span class="sp-ticker">
+                <span class="fc-dot" aria-hidden="true"></span>
+                Today · <b class="mono" data-count="{{ stats.scanned }}">{{ stats.scanned }}</b> scanned · <b class="mono" data-count="{{ stats.under_priced }}">{{ stats.under_priced }}</b> under-priced
+              </span>
+              <button class="sp-toggle" id="dealToggle" type="button" aria-pressed="true" aria-label="Toggle Yendari deal analysis: listing view versus deal view">
+                <span data-opt="listing">Listing</span>
+                <span data-opt="deal">Deal</span>
+              </button>
             </div>
-            <div class="sp-photo">
+            <div class="sp-stage" id="dealStage">
               <img id="fcThumb" src="/img/3578" alt="Top-scored listing" loading="lazy" onerror="this.onerror=null;this.src='/static/hero-porto.jpg'">
+              <span class="sp-scan" aria-hidden="true"></span>
               <span class="score lg sp-score" id="fcScore" style="--c:138.2;--score:92;--ring-color:var(--pos)" role="img" aria-label="Deal score 92 out of 100">
                 <svg viewBox="0 0 50 50" aria-hidden="true"><circle class="ticks" cx="25" cy="25" r="22"/><circle class="val" cx="25" cy="25" r="22"/></svg>
                 <span class="num mono" id="fcScoreNum">92</span>
               </span>
               <span class="chip chip-al sp-al" id="fcAl" style="display:none"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="9" r="4.2"/><path d="M11 12l8 8M16.5 17.5l2-2M19 20l2-2"/></svg>AL · short-let</span>
-            </div>
-            <div class="sp-body">
-              <div class="sp-priceline">
-                <span class="price mono" id="fcPrice">€230,000</span>
-                <span class="chip chip-pos" id="fcDelta"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14m0 0-6-6m6 6 6-6"/></svg><span class="txt">24% below market</span></span>
-              </div>
-              <div class="sp-facts" id="fcSub">T2 · 85 m² · Bonfim, Porto</div>
-              <div class="sp-viz" id="fcViz">
-                <div class="sp-viz-head"><span>Price per m² vs area median</span><span class="sp-viz-val" id="fcBarVal">−24%</span></div>
-                <div class="sp-bar"><i class="sp-bar-fill" id="fcBar" style="width:76%"></i></div>
-                <div class="sp-bar-legend"><span>This home</span><span>Area median</span></div>
-              </div>
-              <div class="sp-foot">
-                <a class="fc-cta" href="#deals">View deal
-                  <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg>
-                </a>
-                <div class="fc-dots" id="fcDots" role="group" aria-label="Rotate featured deals">
-                  <button class="active" type="button" aria-label="Deal 1" aria-pressed="true"></button>
-                  <button type="button" aria-label="Deal 2" aria-pressed="false"></button>
-                  <button type="button" aria-label="Deal 3" aria-pressed="false"></button>
+              <div class="sp-panel">
+                <div class="sp-priceline">
+                  <span class="price mono" id="fcPrice">€230,000</span>
+                  <span class="chip chip-pos sp-an" id="fcDelta"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14m0 0-6-6m6 6 6-6"/></svg><span class="txt">24% below market</span></span>
                 </div>
+                <div class="sp-facts" id="fcSub">T2 · 85 m² · Bonfim, Porto</div>
+                <div class="sp-tags">
+                  <span class="chip chip-ghost sp-an" id="fcYield"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17l6-6 4 4 7-7M17 7h4v4"/></svg><span class="txt">6.3%</span>&nbsp;yield</span>
+                  <span class="chip chip-ghost sp-an" id="fcMetro"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="3" width="14" height="14" rx="3"/><path d="M5 11h14M9 21l-1.5-2M15 21l1.5-2"/></svg><span class="txt">Campo 24 de Agosto · 5 min</span></span>
+                </div>
+              </div>
+            </div>
+            <div class="sp-foot">
+              <a class="fc-cta" href="#deals">View deal
+                <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg>
+              </a>
+              <div class="fc-dots" id="fcDots" role="group" aria-label="Rotate featured deals">
+                <button class="active" type="button" aria-label="Deal 1" aria-pressed="true"></button>
+                <button type="button" aria-label="Deal 2" aria-pressed="false"></button>
+                <button type="button" aria-label="Deal 3" aria-pressed="false"></button>
               </div>
             </div>
           </article>
