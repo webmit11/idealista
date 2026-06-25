@@ -164,6 +164,24 @@ def health():
     return {"status": "ok"}
 
 
+_SCORE_FACTORS = [
+    ("price", "Price vs market", 25),
+    ("metro", "Metro access", 20),
+    ("liquidity", "Liquidity & risk", 15),
+    ("rental_yield", "Gross yield", 15),
+    ("condition", "Condition", 10),
+    ("discount", "Price drop", 5),
+]
+
+
+def _factors(breakdown: Optional[dict]) -> list:
+    """Per-listing factor bars for the deal-score popover (transparency = trust)."""
+    if not breakdown:
+        return []
+    return [{"label": lbl, "weight": w, "pct": round(breakdown.get(key) or 0)}
+            for key, lbl, w in _SCORE_FACTORS]
+
+
 def _storefront_deals(session: Session, limit: int = 3) -> list:
     """Top scored active listings, server-rendered into the storefront (real data + SEO).
 
@@ -177,6 +195,7 @@ def _storefront_deals(session: Session, limit: int = 3) -> list:
         med = (score.explanation_json or {}).get("median_price_per_m2_benchmark") if score else None
         ppm2 = d.get("price_per_m2")
         d["ppm2_diff_pct"] = round((ppm2 / med - 1) * 100, 1) if (ppm2 and med) else None
+        d["factors"] = _factors(d.get("score_breakdown"))
         deals.append(d)
     return deals
 
@@ -204,6 +223,7 @@ def _hero_deals(deals: list) -> list:
             "metro": (f"{d['nearest_metro_station']} · {round(d['walking_minutes_to_metro_estimate'])} min"
                       if (d.get("nearest_metro_station") and d.get("walking_minutes_to_metro_estimate"))
                       else (d.get("nearest_metro_station") or "")),
+            "factors": d.get("factors") or [],
             "al": bool(d.get("has_al_license")),
         })
     return out
