@@ -17,6 +17,7 @@ from fastapi import Depends, FastAPI, Form, HTTPException, Query, Request
 from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from sqlalchemy import func
 from sqlmodel import Session, select
 
 from app.api import (
@@ -198,9 +199,42 @@ def _hero_deals(deals: list) -> list:
             "price": (f"€{d['price']:,.0f}".replace(",", " ")) if d.get("price") else "",
             "sub": " · ".join(sub),
             "delta": (f"{round(-diff)}% below market" if (diff is not None and diff < 0) else ""),
+            "yield": (f"{d['al_gross_yield']:.1f}%" if (d.get("has_al_license") and d.get("al_gross_yield"))
+                      else (f"{d['gross_yield_percent']:.1f}%" if d.get("gross_yield_percent") else "")),
+            "metro": (f"{d['nearest_metro_station']} · {round(d['walking_minutes_to_metro_estimate'])} min"
+                      if (d.get("nearest_metro_station") and d.get("walking_minutes_to_metro_estimate"))
+                      else (d.get("nearest_metro_station") or "")),
             "al": bool(d.get("has_al_license")),
         })
     return out
+
+
+_stats_cache = {"ts": 0.0, "data": None}
+
+
+def _storefront_stats(session: Session) -> dict:
+    """Live headline stats for the hero ticker (real, honest), cached 10 min:
+    `scanned` = active listings in the index; `under_priced` = how many sit >10%
+    below their local median price/m² (the 'deals' we surface)."""
+    now = time.time()
+    if _stats_cache["data"] is not None and now - _stats_cache["ts"] < 600:
+        return _stats_cache["data"]
+    scanned = session.exec(
+        select(func.count(Property.id)).where(Property.is_active == True)  # noqa: E712
+    ).one()
+    rows = session.exec(
+        select(Property.price_per_m2, Score.explanation_json)
+        .join(Score, Score.property_id == Property.id)
+        .where(Property.is_active == True, Property.price_per_m2 != None)  # noqa: E711,E712
+    ).all()
+    under = 0
+    for ppm2, expl in rows:
+        med = (expl or {}).get("median_price_per_m2_benchmark")
+        if med and ppm2 and ppm2 < med * 0.9:
+            under += 1
+    data = {"scanned": scanned, "under_priced": under}
+    _stats_cache.update(ts=now, data=data)
+    return data
 
 
 @app.get("/home", response_class=HTMLResponse)
@@ -215,7 +249,12 @@ def storefront(request: Request, session: Session = Depends(get_session)):
     return templates.TemplateResponse(
         request,
         "storefront.html",
-        {"app_name": settings.app_name, "deals": deals, "hero_json": json.dumps(_hero_deals(deals))},
+        {
+            "app_name": settings.app_name,
+            "deals": deals,
+            "hero_json": json.dumps(_hero_deals(deals)),
+            "stats": _storefront_stats(session),
+        },
     )
 
 
