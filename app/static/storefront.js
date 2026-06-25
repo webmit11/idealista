@@ -166,6 +166,7 @@
     var stage=document.getElementById('dealStage'),
         toggle=document.getElementById('dealToggle'),
         fcThumb=document.getElementById('fcThumb'),
+        cells=Array.prototype.slice.call(topDeal.querySelectorAll('.sp-collage img')),
         fcScore=document.getElementById('fcScore'),
         fcScoreNum=document.getElementById('fcScoreNum'),
         fcPrice=document.getElementById('fcPrice'),
@@ -181,7 +182,8 @@
     function verdictOf(s){ return s>=85?'Excellent':(s>=75?'Strong':'Good'); }
     function chip(el, txt){ if(!el) return; var t=el.querySelector('.txt'); if(t) t.textContent=txt||''; el.style.display=txt?'':'none'; }
     function setData(d){
-      fcThumb.src=d.img;
+      var base=d.img||'', urls=(base.indexOf('/img/')===0)?[base, base+'/1', base+'/2', base+'/3']:[base, base, base, base];
+      cells.forEach(function(im,k){ im.src=urls[k]||base; });
       target=+d.score||0;
       fcScore.style.setProperty('--ring-color', 'var('+d.ring+')');
       fcScore.setAttribute('aria-label', 'Deal score '+d.score+' out of 100');

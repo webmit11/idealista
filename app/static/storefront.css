@@ -253,7 +253,8 @@ button,input,select{font:inherit;color:inherit}
 .sp-toggle:focus-visible{outline:none;box-shadow:var(--ring)}
 
 .sp-stage{position:relative;overflow:hidden;aspect-ratio:3/4;background:var(--surface-2)}
-.sp-stage img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:filter .4s ease}
+.sp-collage{position:absolute;inset:0;display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:3px;background:var(--bg);transition:filter .4s ease}
+.sp-collage img{width:100%;height:100%;object-fit:cover;min-width:0;min-height:0;display:block}
 .sp-stage::after{content:"";position:absolute;inset:0;pointer-events:none;
   background:linear-gradient(180deg,rgba(6,9,8,.42),rgba(6,9,8,0) 28%,rgba(6,9,8,0) 44%,rgba(6,9,8,.8))}
 .sp-scan{position:absolute;left:0;right:0;top:0;height:3px;z-index:3;opacity:0;pointer-events:none;
@@ -275,7 +276,7 @@ button,input,select{font:inherit;color:inherit}
 .sp-tags .chip{background:var(--scrim);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid var(--border-strong);color:#fff}
 .sp-panel #fcDelta{background:var(--pos);color:#06251b;border-color:transparent}
 /* Listing vs Deal contrast: dim the photo + swap the mode caption */
-.spotlight:not(.deal-view) .sp-stage img{filter:saturate(.3) brightness(.62)}
+.spotlight:not(.deal-view) .sp-collage{filter:saturate(.3) brightness(.62)}
 .sp-mode{display:inline-flex;align-items:center;font-size:11px;font-weight:700;letter-spacing:.02em;margin-bottom:2px}
 .sp-mode .icon{width:13px;height:13px;margin-right:5px}
 .sm-listing,.sm-deal{display:none;align-items:center}
@@ -295,7 +296,7 @@ button,input,select{font:inherit;color:inherit}
 @media (prefers-reduced-motion:reduce){
   .sp-score,.sp-al,.sp-an{transition:none;transform:none}
   .sp-stage.scanning .sp-scan{animation:none}
-  .sp-stage img{transition:none}
+  .sp-collage{transition:none}
 }
 .place-tag{position:absolute;left:16px;top:16px;z-index:2;display:inline-flex;align-items:center;gap:7px;
   height:34px;padding:0 13px;border-radius:var(--pill);font-size:13px;font-weight:600;
