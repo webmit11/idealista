@@ -235,7 +235,7 @@ button,input,select{font:inherit;color:inherit}
 
 /* hero media */
 .hero-media{display:flex}
-@media (min-width:980px){ .hero-grid{align-items:stretch} }
+@media (min-width:980px){ .hero-grid{align-items:start} }
 
 /* Deal Spotlight — the hero's data-rich right column (fills the column height) */
 .spotlight{flex:1;display:flex;flex-direction:column;overflow:hidden;
@@ -244,8 +244,8 @@ button,input,select{font:inherit;color:inherit}
 .sp-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:14px 16px 12px}
 .sp-label{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--text)}
 .sp-fresh{font-size:10.5px;color:var(--text-3);font-family:var(--ff-mono)}
-.sp-photo{position:relative;flex:1;min-height:230px;overflow:hidden;background:var(--surface-2)}
-.sp-photo img{width:100%;height:100%;object-fit:cover}
+.sp-photo{position:relative;overflow:hidden;background:var(--surface-2);aspect-ratio:1/1}
+.sp-photo img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .sp-photo::after{content:"";position:absolute;inset:0;pointer-events:none;
   background:linear-gradient(180deg,rgba(6,9,8,.5),rgba(6,9,8,0) 26%,rgba(6,9,8,0) 72%,rgba(6,9,8,.3))}
 .sp-photo .sp-score{position:absolute;left:16px;top:16px;z-index:2;filter:drop-shadow(0 3px 9px rgba(0,0,0,.6))}
