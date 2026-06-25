@@ -257,6 +257,29 @@ def _storefront_stats(session: Session) -> dict:
     return data
 
 
+def _roi_seed(d: dict):
+    """Seed for the storefront ROI simulator: real listing + engine assumptions."""
+    from app.services.investment import compute_investment
+
+    iv = compute_investment(d.get("price"), d.get("rental_estimate_mid"), d.get("typology"))
+    if not iv:
+        return None
+    price = iv["price"]
+    al = bool(d.get("has_al_license")) and iv.get("al", {}).get("opex_pct")
+    return {
+        "price": price,
+        "accRate": round((iv["acquisition"]["total_investment"] - price) / price, 4),
+        "imiRate": round((iv["income"]["imi"] or 0) / price, 5),
+        "opexPct": iv["al"]["opex_pct"] if al else round(settings.operating_cost_pct * 100),
+        "term": iv["mortgage"]["term_years"] or 30,
+        "rent": round(iv["income"]["rent_mid"]),
+        "ltv": round(iv["mortgage"]["ltv_pct"]),
+        "rate": iv["mortgage"]["rate_pct"],
+        "areaAvgYield": 4.5,
+        "label": f"{d.get('typology') or '?'} · {d.get('parish') or d.get('municipality') or ''}",
+    }
+
+
 @app.get("/home", response_class=HTMLResponse)
 def storefront(request: Request, session: Session = Depends(get_session)):
     """Public English-first storefront (Yendari) — open browsing, no Telegram auth.
@@ -274,6 +297,7 @@ def storefront(request: Request, session: Session = Depends(get_session)):
             "deals": deals,
             "hero_json": json.dumps(_hero_deals(deals)),
             "stats": _storefront_stats(session),
+            "roi_json": json.dumps(_roi_seed(deals[0]) if deals else None),
         },
     )
 
