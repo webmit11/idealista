@@ -193,6 +193,7 @@ button,input,select{font:inherit;color:inherit}
 .h1 .em{
   background:linear-gradient(95deg,var(--accent-strong),var(--accent));
   -webkit-background-clip:text;background-clip:text;color:transparent;
+  padding-right:.07em;                 /* room so background-clip:text doesn't shave the last glyph */
 }
 .lead{font-size:clamp(1.02rem,1.6vw,1.18rem);color:var(--text-2);max-width:42ch;margin-bottom:0;text-wrap:pretty}
 .hero-pitch{font-size:clamp(1.06rem,1.6vw,1.24rem);font-weight:600;letter-spacing:-.016em;color:var(--text);max-width:34ch;margin-bottom:16px;text-wrap:balance}
